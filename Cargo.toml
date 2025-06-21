@@ -1,0 +1,24 @@
+[package]
+name = "digipin"
+version = "0.0.1"
+edition = "2021"
+authors = ["Sahil"]
+description = "DIGIPIN Encoder and Decoder Library - Encode latitude & longitude into 10-digit alphanumeric DIGIPIN codes"
+license = "MIT"
+repository = "https://github.com/kokamkarsahil/digipin-rust/"
+keywords = ["geocoding", "location", "india-post", "coordinates", "digipin"]
+categories = ["encoding", "algorithms"]
+
+[dependencies]
+serde = { version = "1.0", features = ["derive"], optional = true }
+
+[features]
+default = []
+serde = ["dep:serde"]
+
+[dev-dependencies]
+serde_json = "1.0"
+
+[[example]]
+name = "basic_usage"
+path = "examples/basic_usage.rs"
