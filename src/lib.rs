@@ -37,7 +37,10 @@ pub struct Coordinates {
 impl Coordinates {
     /// Create a new coordinate pair
     pub fn new(latitude: f64, longitude: f64) -> Self {
-        Self { latitude, longitude }
+        Self {
+            latitude,
+            longitude,
+        }
     }
 }
 
@@ -93,16 +96,16 @@ pub type DigipinResult<T> = Result<T, DigipinError>;
 /// # Example
 /// ```
 /// use digipin::get_digipin;
-/// 
+///
 /// let digipin = get_digipin(28.6139, 77.2090)?; // New Delhi coordinates
 /// println!("DIGIPIN: {}", digipin);
 /// # Ok::<(), digipin::DigipinError>(())
 /// ```
 pub fn get_digipin(latitude: f64, longitude: f64) -> DigipinResult<String> {
-    if latitude < BOUNDS.min_lat || latitude > BOUNDS.max_lat {
+    if !(BOUNDS.min_lat..=BOUNDS.max_lat).contains(&latitude) {
         return Err(DigipinError::LatitudeOutOfRange(latitude));
     }
-    if longitude < BOUNDS.min_lon || longitude > BOUNDS.max_lon {
+    if !(BOUNDS.min_lon..=BOUNDS.max_lon).contains(&longitude) {
         return Err(DigipinError::LongitudeOutOfRange(longitude));
     }
 
@@ -132,9 +135,9 @@ pub fn get_digipin(latitude: f64, longitude: f64) -> DigipinResult<String> {
 
         // Update bounds (reverse logic for row)
         max_lat = min_lat + lat_div * (4 - row) as f64;
-        min_lat = min_lat + lat_div * (3 - row) as f64;
+        min_lat += lat_div * (3 - row) as f64;
 
-        min_lon = min_lon + lon_div * col as f64;
+        min_lon += lon_div * col as f64;
         max_lon = min_lon + lon_div;
     }
 
@@ -155,14 +158,14 @@ pub fn get_digipin(latitude: f64, longitude: f64) -> DigipinResult<String> {
 /// # Example
 /// ```
 /// use digipin::get_coordinates_from_digipin;
-/// 
+///
 /// let coords = get_coordinates_from_digipin("FCJ-3F9-8273")?;
 /// println!("Latitude: {}, Longitude: {}", coords.latitude, coords.longitude);
 /// # Ok::<(), digipin::DigipinError>(())
 /// ```
 pub fn get_coordinates_from_digipin(digipin: &str) -> DigipinResult<Coordinates> {
     let pin: String = digipin.chars().filter(|&c| c != '-').collect();
-    
+
     if pin.len() != 10 {
         return Err(DigipinError::InvalidLength(pin.len()));
     }
@@ -216,10 +219,10 @@ mod tests {
     fn test_encode_decode_roundtrip() {
         let original_lat = 28.6139;
         let original_lon = 77.2090;
-        
+
         let digipin = get_digipin(original_lat, original_lon).unwrap();
         let decoded = get_coordinates_from_digipin(&digipin).unwrap();
-        
+
         // Should be close to original (within DIGIPIN precision)
         assert!((decoded.latitude - original_lat).abs() < 0.01);
         assert!((decoded.longitude - original_lon).abs() < 0.01);
@@ -232,7 +235,7 @@ mod tests {
             get_digipin(50.0, 77.0),
             Err(DigipinError::LatitudeOutOfRange(_))
         ));
-        
+
         // Test longitude out of range
         assert!(matches!(
             get_digipin(28.0, 120.0),
@@ -247,7 +250,7 @@ mod tests {
             get_coordinates_from_digipin("FCJ-3F9"),
             Err(DigipinError::InvalidLength(_))
         ));
-        
+
         // Test invalid character
         assert!(matches!(
             get_coordinates_from_digipin("FCJ-3F9-82Z3"),
@@ -259,7 +262,7 @@ mod tests {
     fn test_digipin_with_hyphens() {
         let coords = get_coordinates_from_digipin("FCJ-3F9-8273").unwrap();
         let coords_no_hyphens = get_coordinates_from_digipin("FCJ3F98273").unwrap();
-        
+
         assert_eq!(coords.latitude, coords_no_hyphens.latitude);
         assert_eq!(coords.longitude, coords_no_hyphens.longitude);
     }
