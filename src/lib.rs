@@ -9,6 +9,9 @@ const DIGIPIN_GRID: [[char; 4]; 4] = [
     ['L', 'M', 'P', 'T'],
 ];
 
+const SPAN: f64 = 36.0;
+const POWER_F: f64 = 1_048_576.0;
+
 /// Geographic bounds for DIGIPIN encoding (covers India)
 const BOUNDS: Bounds = Bounds {
     min_lat: 2.5,
@@ -109,36 +112,21 @@ pub fn get_digipin(latitude: f64, longitude: f64) -> DigipinResult<String> {
         return Err(DigipinError::LongitudeOutOfRange(longitude));
     }
 
-    let mut min_lat = BOUNDS.min_lat;
-    let mut max_lat = BOUNDS.max_lat;
-    let mut min_lon = BOUNDS.min_lon;
-    let mut max_lon = BOUNDS.max_lon;
+    let frac_lat = (BOUNDS.max_lat - latitude) / SPAN;
+    let idx_lat = (frac_lat * POWER_F).floor().min(POWER_F - 1.0) as u32;
+    let frac_lon = (longitude - BOUNDS.min_lon) / SPAN;
+    let idx_lon = (frac_lon * POWER_F).floor().min(POWER_F - 1.0) as u32;
 
-    let mut digipin = String::with_capacity(12); // 10 chars + 2 hyphens
+    let mut digipin = String::with_capacity(12);
 
-    for level in 1..=10 {
-        let lat_div = (max_lat - min_lat) / 4.0;
-        let lon_div = (max_lon - min_lon) / 4.0;
-
-        // REVERSED row logic (to match original JavaScript implementation)
-        let row = 3 - ((latitude - min_lat) / lat_div).floor() as usize;
-        let col = ((longitude - min_lon) / lon_div).floor() as usize;
-
-        let row = row.min(3);
-        let col = col.min(3);
-
+    for i in (0..10).rev() {
+        let shift = 2 * i;
+        let row = ((idx_lat >> shift) & 3) as usize;
+        let col = ((idx_lon >> shift) & 3) as usize;
         digipin.push(DIGIPIN_GRID[row][col]);
-
-        if level == 3 || level == 6 {
+        if i == 7 || i == 4 {
             digipin.push('-');
         }
-
-        // Update bounds (reverse logic for row)
-        max_lat = min_lat + lat_div * (4 - row) as f64;
-        min_lat += lat_div * (3 - row) as f64;
-
-        min_lon += lon_div * col as f64;
-        max_lon = min_lon + lon_div;
     }
 
     Ok(digipin)
@@ -164,51 +152,56 @@ pub fn get_digipin(latitude: f64, longitude: f64) -> DigipinResult<String> {
 /// # Ok::<(), digipin::DigipinError>(())
 /// ```
 pub fn get_coordinates_from_digipin(digipin: &str) -> DigipinResult<Coordinates> {
-    let pin: String = digipin.chars().filter(|&c| c != '-').collect();
+    let mut char_iter = digipin.chars().filter(|&c| c != '-');
+    let mut idx_lat: u32 = 0;
+    let mut idx_lon: u32 = 0;
+    let mut count = 0;
 
-    if pin.len() != 10 {
-        return Err(DigipinError::InvalidLength(pin.len()));
+    for _ in 0..10 {
+        match char_iter.next() {
+            Some(ch) => {
+                let (row, col) = find_char_in_grid(ch)?;
+                idx_lat = (idx_lat << 2) | row as u32;
+                idx_lon = (idx_lon << 2) | col as u32;
+                count += 1;
+            }
+            None => return Err(DigipinError::InvalidLength(count)),
+        }
     }
 
-    let mut min_lat = BOUNDS.min_lat;
-    let mut max_lat = BOUNDS.max_lat;
-    let mut min_lon = BOUNDS.min_lon;
-    let mut max_lon = BOUNDS.max_lon;
-
-    for ch in pin.chars() {
-        let (ri, ci) = find_char_in_grid(ch)?;
-
-        let lat_div = (max_lat - min_lat) / 4.0;
-        let lon_div = (max_lon - min_lon) / 4.0;
-
-        let lat1 = max_lat - lat_div * (ri + 1) as f64;
-        let lat2 = max_lat - lat_div * ri as f64;
-        let lon1 = min_lon + lon_div * ci as f64;
-        let lon2 = min_lon + lon_div * (ci + 1) as f64;
-
-        // Update bounding box for next level
-        min_lat = lat1;
-        max_lat = lat2;
-        min_lon = lon1;
-        max_lon = lon2;
+    if char_iter.next().is_some() {
+        return Err(DigipinError::InvalidLength(count + 1));
     }
 
-    let center_lat = (min_lat + max_lat) / 2.0;
-    let center_lon = (min_lon + max_lon) / 2.0;
+    let frac_lat = (idx_lat as f64 + 0.5) / POWER_F;
+    let center_lat = BOUNDS.max_lat - frac_lat * SPAN;
+    let frac_lon = (idx_lon as f64 + 0.5) / POWER_F;
+    let center_lon = BOUNDS.min_lon + frac_lon * SPAN;
 
     Ok(Coordinates::new(center_lat, center_lon))
 }
 
 /// Find the position of a character in the DIGIPIN grid
 fn find_char_in_grid(ch: char) -> DigipinResult<(usize, usize)> {
-    for (row_idx, row) in DIGIPIN_GRID.iter().enumerate() {
-        for (col_idx, &grid_char) in row.iter().enumerate() {
-            if grid_char == ch {
-                return Ok((row_idx, col_idx));
-            }
-        }
+    match ch {
+        'F' => Ok((0, 0)),
+        'C' => Ok((0, 1)),
+        '9' => Ok((0, 2)),
+        '8' => Ok((0, 3)),
+        'J' => Ok((1, 0)),
+        '3' => Ok((1, 1)),
+        '2' => Ok((1, 2)),
+        '7' => Ok((1, 3)),
+        'K' => Ok((2, 0)),
+        '4' => Ok((2, 1)),
+        '5' => Ok((2, 2)),
+        '6' => Ok((2, 3)),
+        'L' => Ok((3, 0)),
+        'M' => Ok((3, 1)),
+        'P' => Ok((3, 2)),
+        'T' => Ok((3, 3)),
+        _ => Err(DigipinError::InvalidCharacter(ch)),
     }
-    Err(DigipinError::InvalidCharacter(ch))
 }
 
 #[cfg(test)]
