@@ -70,29 +70,51 @@ fn parse_ascii(digipin: &str) -> DigipinResult<(u32, u32)> {
     debug_assert!(digipin.is_ascii());
     let bytes = digipin.as_bytes();
     let len = bytes.len();
-    let mut i = 0;
     let mut idx_lat = 0u32;
     let mut idx_lon = 0u32;
-    let mut count = 0;
-    while i < len && count < 10 {
-        let b = bytes[i];
-        i += 1;
-        if b == b'-' {
-            continue;
+
+    match len {
+        10 => {
+            for &b in bytes.iter() {
+                let (row, col) = LOOKUP[b as usize].ok_or(DigipinError::InvalidCharacter(b as char))?;
+                idx_lat = (idx_lat << 2) | row as u32;
+                idx_lon = (idx_lon << 2) | col as u32;
+            }
         }
-        let (row, col) = LOOKUP[b as usize].ok_or(DigipinError::InvalidCharacter(b as char))?;
-        idx_lat = (idx_lat << 2) | row as u32;
-        idx_lon = (idx_lon << 2) | col as u32;
-        count += 1;
-    }
-    if count < 10 {
-        return Err(DigipinError::InvalidLength(count));
-    }
-    while i < len {
-        let b = bytes[i];
-        i += 1;
-        if b != b'-' {
-            return Err(DigipinError::InvalidLength(count + 1));
+        12 => {
+            if bytes[3] != b'-' || bytes[7] != b'-' {
+                return Err(DigipinError::InvalidLength(len));
+            }
+            for i in 0..12 {
+                let b = bytes[i];
+                if b == b'-' { continue; }
+                let (row, col) = LOOKUP[b as usize].ok_or(DigipinError::InvalidCharacter(b as char))?;
+                idx_lat = (idx_lat << 2) | row as u32;
+                idx_lon = (idx_lon << 2) | col as u32;
+            }
+        }
+        _ => {
+            let mut i = 0;
+            let mut count = 0;
+            while i < len && count < 10 {
+                let b = bytes[i];
+                i += 1;
+                if b == b'-' { continue; }
+                let (row, col) = LOOKUP[b as usize].ok_or(DigipinError::InvalidCharacter(b as char))?;
+                idx_lat = (idx_lat << 2) | row as u32;
+                idx_lon = (idx_lon << 2) | col as u32;
+                count += 1;
+            }
+            if count < 10 {
+                return Err(DigipinError::InvalidLength(count));
+            }
+            while i < len {
+                let b = bytes[i];
+                i += 1;
+                if b != b'-' {
+                    return Err(DigipinError::InvalidLength(count + 1));
+                }
+            }
         }
     }
     Ok((idx_lat, idx_lon))
