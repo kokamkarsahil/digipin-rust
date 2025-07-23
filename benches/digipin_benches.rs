@@ -1,4 +1,4 @@
-use digipin::{get_digipin, get_coordinates_from_digipin};
+use digipin::{get_digipin, get_coordinates_from_digipin, get_bounds_from_digipin};
 use divan::black_box;
 
 #[divan::bench]
@@ -12,6 +12,12 @@ fn encode() {
 fn decode() {
     let pin = black_box("FCJ-3F9-8273");
     get_coordinates_from_digipin(pin).unwrap();
+}
+
+#[divan::bench]
+fn bounds() {
+    let pin = black_box("FCJ-3F9-8273");
+    get_bounds_from_digipin(pin).unwrap();
 }
 
 fn main() {

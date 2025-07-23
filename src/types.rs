@@ -19,6 +19,15 @@ impl Coordinates {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+pub struct GeoBounds {
+    pub min_latitude: f64,
+    pub max_latitude: f64,
+    pub min_longitude: f64,
+    pub max_longitude: f64,
+}
+
 /// Geographic bounds structure
 #[derive(Debug, Clone, Copy)]
 pub(crate) struct Bounds {
