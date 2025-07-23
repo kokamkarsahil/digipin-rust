@@ -1,8 +1,8 @@
-pub(crate) const DIGIPIN_GRID: [[char; 4]; 4] = [
-    ['F', 'C', '9', '8'],
-    ['J', '3', '2', '7'],
-    ['K', '4', '5', '6'],
-    ['L', 'M', 'P', 'T'],
+pub(crate) const DIGIPIN_GRID: [[u8; 4]; 4] = [
+    [b'F', b'C', b'9', b'8'],
+    [b'J', b'3', b'2', b'7'],
+    [b'K', b'4', b'5', b'6'],
+    [b'L', b'M', b'P', b'T'],
 ];
 
 pub(crate) const SPAN: f64 = 36.0;

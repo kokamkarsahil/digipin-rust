@@ -33,17 +33,20 @@ pub fn get_digipin(latitude: f64, longitude: f64) -> DigipinResult<String> {
     let frac_lon = (longitude - BOUNDS.min_lon) / SPAN;
     let idx_lon = (frac_lon * POWER_F).floor().min(POWER_F - 1.0) as u32;
 
-    let mut digipin = String::with_capacity(12);
+    let mut vec_u8 = Vec::with_capacity(12);
 
-    for i in (0..10).rev() {
-        let shift = 2 * i;
-        let row = ((idx_lat >> shift) & 3) as usize;
-        let col = ((idx_lon >> shift) & 3) as usize;
-        digipin.push(DIGIPIN_GRID[row][col]);
-        if i == 7 || i == 4 {
-            digipin.push('-');
-        }
-    }
+    vec_u8.push(DIGIPIN_GRID[((idx_lat >> 18) & 3) as usize][((idx_lon >> 18) & 3) as usize]);
+    vec_u8.push(DIGIPIN_GRID[((idx_lat >> 16) & 3) as usize][((idx_lon >> 16) & 3) as usize]);
+    vec_u8.push(DIGIPIN_GRID[((idx_lat >> 14) & 3) as usize][((idx_lon >> 14) & 3) as usize]);
+    vec_u8.push(b'-');
+    vec_u8.push(DIGIPIN_GRID[((idx_lat >> 12) & 3) as usize][((idx_lon >> 12) & 3) as usize]);
+    vec_u8.push(DIGIPIN_GRID[((idx_lat >> 10) & 3) as usize][((idx_lon >> 10) & 3) as usize]);
+    vec_u8.push(DIGIPIN_GRID[((idx_lat >> 8) & 3) as usize][((idx_lon >> 8) & 3) as usize]);
+    vec_u8.push(b'-');
+    vec_u8.push(DIGIPIN_GRID[((idx_lat >> 6) & 3) as usize][((idx_lon >> 6) & 3) as usize]);
+    vec_u8.push(DIGIPIN_GRID[((idx_lat >> 4) & 3) as usize][((idx_lon >> 4) & 3) as usize]);
+    vec_u8.push(DIGIPIN_GRID[((idx_lat >> 2) & 3) as usize][((idx_lon >> 2) & 3) as usize]);
+    vec_u8.push(DIGIPIN_GRID[(idx_lat & 3) as usize][(idx_lon & 3) as usize]);
 
-    Ok(digipin)
+    Ok(unsafe { String::from_utf8_unchecked(vec_u8) })
 } 

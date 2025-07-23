@@ -1,6 +1,6 @@
 use crate::{constants::*, errors::*, types::*};
 
-const LOOKUP: [Option<(usize, usize)>; 128] = {
+const LOOKUP: [Option<(u8, u8)>; 128] = {
     let mut lookup = [None; 128];
     lookup['F' as usize] = Some((0, 0));
     lookup['C' as usize] = Some((0, 1));
@@ -41,37 +41,20 @@ const LOOKUP: [Option<(usize, usize)>; 128] = {
 /// # Ok::<(), digipin::DigipinError>(())
 /// ```
 pub fn get_coordinates_from_digipin(digipin: &str) -> DigipinResult<Coordinates> {
-    let mut char_iter = digipin.chars().filter(|&c| c != '-');
-    let mut idx_lat: u32 = 0;
-    let mut idx_lon: u32 = 0;
-    let mut count = 0;
-
-    for _ in 0..10 {
-        match char_iter.next() {
-            Some(ch) => {
-                let (row, col) = find_char_in_grid(ch)?;
-                idx_lat = (idx_lat << 2) | row as u32;
-                idx_lon = (idx_lon << 2) | col as u32;
-                count += 1;
-            }
-            None => return Err(DigipinError::InvalidLength(count)),
-        }
-    }
-
-    if char_iter.next().is_some() {
-        return Err(DigipinError::InvalidLength(count + 1));
-    }
-
+    let (idx_lat, idx_lon) = if digipin.is_ascii() {
+        parse_ascii(digipin)?
+    } else {
+        parse_unicode(digipin)?
+    };
     let frac_lat = (idx_lat as f64 + 0.5) / POWER_F;
     let center_lat = BOUNDS.max_lat - frac_lat * SPAN;
     let frac_lon = (idx_lon as f64 + 0.5) / POWER_F;
     let center_lon = BOUNDS.min_lon + frac_lon * SPAN;
-
     Ok(Coordinates::new(center_lat, center_lon))
 }
 
 /// Find the position of a character in the DIGIPIN grid
-fn find_char_in_grid(ch: char) -> DigipinResult<(usize, usize)> {
+fn find_char_in_grid(ch: char) -> DigipinResult<(u8, u8)> {
     if ch.is_ascii() {
         let idx = ch as usize;
         if idx < 128 {
@@ -81,6 +64,57 @@ fn find_char_in_grid(ch: char) -> DigipinResult<(usize, usize)> {
         }
     }
     Err(DigipinError::InvalidCharacter(ch))
+}
+
+fn parse_ascii(digipin: &str) -> DigipinResult<(u32, u32)> {
+    debug_assert!(digipin.is_ascii());
+    let bytes = digipin.as_bytes();
+    let len = bytes.len();
+    let mut i = 0;
+    let mut idx_lat = 0u32;
+    let mut idx_lon = 0u32;
+    let mut count = 0;
+    while i < len && count < 10 {
+        let b = bytes[i];
+        i += 1;
+        if b == b'-' {
+            continue;
+        }
+        let (row, col) = LOOKUP[b as usize].ok_or(DigipinError::InvalidCharacter(b as char))?;
+        idx_lat = (idx_lat << 2) | row as u32;
+        idx_lon = (idx_lon << 2) | col as u32;
+        count += 1;
+    }
+    if count < 10 {
+        return Err(DigipinError::InvalidLength(count));
+    }
+    while i < len {
+        let b = bytes[i];
+        i += 1;
+        if b != b'-' {
+            return Err(DigipinError::InvalidLength(count + 1));
+        }
+    }
+    Ok((idx_lat, idx_lon))
+}
+
+fn parse_unicode(digipin: &str) -> DigipinResult<(u32, u32)> {
+    let mut char_iter = digipin.chars().filter(|&c| c != '-');
+    let mut idx_lat: u32 = 0;
+    let mut idx_lon: u32 = 0;
+    let mut count = 0;
+    for _ in 0..10 {
+        let ch = char_iter.next().ok_or(DigipinError::InvalidLength(count))?;
+        let (row, col) = find_char_in_grid(ch)?;
+        idx_lat = (idx_lat << 2) | row as u32;
+        idx_lon = (idx_lon << 2) | col as u32;
+        count += 1;
+    }
+    if char_iter.next().is_some() {
+        Err(DigipinError::InvalidLength(11))
+    } else {
+        Ok((idx_lat, idx_lon))
+    }
 }
 
 /// Gets the geographic bounds for a given DIGIPIN.
@@ -103,27 +137,11 @@ fn find_char_in_grid(ch: char) -> DigipinResult<(usize, usize)> {
 /// # Ok::<(), digipin::DigipinError>(())
 /// ```
 pub fn get_bounds_from_digipin(digipin: &str) -> DigipinResult<GeoBounds> {
-    let mut char_iter = digipin.chars().filter(|&c| c != '-');
-    let mut idx_lat: u32 = 0;
-    let mut idx_lon: u32 = 0;
-    let mut count = 0;
-
-    for _ in 0..10 {
-        match char_iter.next() {
-            Some(ch) => {
-                let (row, col) = find_char_in_grid(ch)?;
-                idx_lat = (idx_lat << 2) | row as u32;
-                idx_lon = (idx_lon << 2) | col as u32;
-                count += 1;
-            }
-            None => return Err(DigipinError::InvalidLength(count)),
-        }
-    }
-
-    if char_iter.next().is_some() {
-        return Err(DigipinError::InvalidLength(count + 1));
-    }
-
+    let (idx_lat, idx_lon) = if digipin.is_ascii() {
+        parse_ascii(digipin)?
+    } else {
+        parse_unicode(digipin)?
+    };
     let power = POWER_F;
     let min_frac_lat = idx_lat as f64 / power;
     let max_frac_lat = (idx_lat as f64 + 1.0) / power;
@@ -133,7 +151,6 @@ pub fn get_bounds_from_digipin(digipin: &str) -> DigipinResult<GeoBounds> {
     let max_frac_lon = (idx_lon as f64 + 1.0) / power;
     let min_lon = BOUNDS.min_lon + min_frac_lon * SPAN;
     let max_lon = BOUNDS.min_lon + max_frac_lon * SPAN;
-
     Ok(GeoBounds {
         min_latitude: min_lat,
         max_latitude: max_lat,
