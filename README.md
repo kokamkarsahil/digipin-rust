@@ -239,6 +239,37 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 ```
 
+### Getting Geographic Bounds
+
+You can retrieve the bounding box (minimum and maximum latitude/longitude) for any DIGIPIN code. This is useful for understanding the area covered by the code.
+
+```rust
+use digipin::get_bounds_from_digipin;
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let digipin = "FCJ-3F9-8273";
+    let bounds = get_bounds_from_digipin(digipin)?;
+    println!("Latitude range: {:.6} to {:.6}", bounds.min_latitude, bounds.max_latitude);
+    println!("Longitude range: {:.6} to {:.6}", bounds.min_longitude, bounds.max_longitude);
+
+    // Calculate approximate cell size in meters (rough estimate at equator)
+    let lat_delta = bounds.max_latitude - bounds.min_latitude;
+    let lon_delta = bounds.max_longitude - bounds.min_longitude;
+    let avg_lat = (bounds.min_latitude + bounds.max_latitude) / 2.0;
+    let lat_meters = lat_delta * 111_000.0;
+    let lon_meters = lon_delta * 111_000.0 * avg_lat.to_radians().cos();
+    println!("Approximate cell size: {:.2}m x {:.2}m", lat_meters, lon_meters);
+    Ok(())
+}
+```
+
+This will output something like:
+```
+Latitude range: 28.613888 to 28.613922
+Longitude range: 77.208984 to 77.209018
+Approximate cell size: 3.81m x 3.25m
+```
+
 ### Running Examples and Tests
 
 ```bash
