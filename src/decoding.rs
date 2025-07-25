@@ -21,6 +21,16 @@ const LOOKUP: [Option<(u8, u8)>; 128] = {
     lookup
 };
 
+macro_rules! add_pair {
+    ($bytes:expr, $pos:expr, $idx_lat:expr, $idx_lon:expr) => {{
+        let b = $bytes[$pos];
+        let key = if b >= b'a' && b <= b'z' { b - 32 } else { b };
+        let (row, col) = LOOKUP[key as usize].ok_or(DigipinError::InvalidCharacter($bytes[$pos] as char))?;
+        $idx_lat = ($idx_lat << 2) | row as u32;
+        $idx_lon = ($idx_lon << 2) | col as u32;
+    }};
+}
+
 /// Decodes a DIGIPIN string back into its central latitude and longitude coordinates.
 ///
 /// # Arguments
@@ -55,15 +65,20 @@ pub fn get_coordinates_from_digipin(digipin: &str) -> DigipinResult<Coordinates>
 
 /// Find the position of a character in the DIGIPIN grid
 fn find_char_in_grid(ch: char) -> DigipinResult<(u8, u8)> {
-    if ch.is_ascii() {
-        let idx = ch as usize;
+    let mut ch_upper = ch;
+    let orig_ch = ch;
+    if ch.is_ascii_lowercase() {
+        ch_upper = ch.to_ascii_uppercase();
+    }
+    if ch_upper.is_ascii() {
+        let idx = ch_upper as usize;
         if idx < 128 {
             if let Some(pos) = LOOKUP[idx] {
                 return Ok(pos);
             }
         }
     }
-    Err(DigipinError::InvalidCharacter(ch))
+    Err(DigipinError::InvalidCharacter(orig_ch))
 }
 
 fn parse_ascii(digipin: &str) -> DigipinResult<(u32, u32)> {
@@ -74,92 +89,30 @@ fn parse_ascii(digipin: &str) -> DigipinResult<(u32, u32)> {
     if len == 10 {
         let mut idx_lat = 0u32;
         let mut idx_lon = 0u32;
-
-        let (row, col) = LOOKUP[bytes[0] as usize].ok_or(DigipinError::InvalidCharacter(bytes[0] as char))?;
-        idx_lat = (idx_lat << 2) | row as u32;
-        idx_lon = (idx_lon << 2) | col as u32;
-
-        let (row, col) = LOOKUP[bytes[1] as usize].ok_or(DigipinError::InvalidCharacter(bytes[1] as char))?;
-        idx_lat = (idx_lat << 2) | row as u32;
-        idx_lon = (idx_lon << 2) | col as u32;
-
-        let (row, col) = LOOKUP[bytes[2] as usize].ok_or(DigipinError::InvalidCharacter(bytes[2] as char))?;
-        idx_lat = (idx_lat << 2) | row as u32;
-        idx_lon = (idx_lon << 2) | col as u32;
-
-        let (row, col) = LOOKUP[bytes[3] as usize].ok_or(DigipinError::InvalidCharacter(bytes[3] as char))?;
-        idx_lat = (idx_lat << 2) | row as u32;
-        idx_lon = (idx_lon << 2) | col as u32;
-
-        let (row, col) = LOOKUP[bytes[4] as usize].ok_or(DigipinError::InvalidCharacter(bytes[4] as char))?;
-        idx_lat = (idx_lat << 2) | row as u32;
-        idx_lon = (idx_lon << 2) | col as u32;
-
-        let (row, col) = LOOKUP[bytes[5] as usize].ok_or(DigipinError::InvalidCharacter(bytes[5] as char))?;
-        idx_lat = (idx_lat << 2) | row as u32;
-        idx_lon = (idx_lon << 2) | col as u32;
-
-        let (row, col) = LOOKUP[bytes[6] as usize].ok_or(DigipinError::InvalidCharacter(bytes[6] as char))?;
-        idx_lat = (idx_lat << 2) | row as u32;
-        idx_lon = (idx_lon << 2) | col as u32;
-
-        let (row, col) = LOOKUP[bytes[7] as usize].ok_or(DigipinError::InvalidCharacter(bytes[7] as char))?;
-        idx_lat = (idx_lat << 2) | row as u32;
-        idx_lon = (idx_lon << 2) | col as u32;
-
-        let (row, col) = LOOKUP[bytes[8] as usize].ok_or(DigipinError::InvalidCharacter(bytes[8] as char))?;
-        idx_lat = (idx_lat << 2) | row as u32;
-        idx_lon = (idx_lon << 2) | col as u32;
-
-        let (row, col) = LOOKUP[bytes[9] as usize].ok_or(DigipinError::InvalidCharacter(bytes[9] as char))?;
-        idx_lat = (idx_lat << 2) | row as u32;
-        idx_lon = (idx_lon << 2) | col as u32;
-
+        add_pair!(bytes, 0, idx_lat, idx_lon);
+        add_pair!(bytes, 1, idx_lat, idx_lon);
+        add_pair!(bytes, 2, idx_lat, idx_lon);
+        add_pair!(bytes, 3, idx_lat, idx_lon);
+        add_pair!(bytes, 4, idx_lat, idx_lon);
+        add_pair!(bytes, 5, idx_lat, idx_lon);
+        add_pair!(bytes, 6, idx_lat, idx_lon);
+        add_pair!(bytes, 7, idx_lat, idx_lon);
+        add_pair!(bytes, 8, idx_lat, idx_lon);
+        add_pair!(bytes, 9, idx_lat, idx_lon);
         return Ok((idx_lat, idx_lon));
     } else if len == 12 && bytes[3] == b'-' && bytes[7] == b'-' {
         let mut idx_lat = 0u32;
         let mut idx_lon = 0u32;
-
-        let (row, col) = LOOKUP[bytes[0] as usize].ok_or(DigipinError::InvalidCharacter(bytes[0] as char))?;
-        idx_lat = (idx_lat << 2) | row as u32;
-        idx_lon = (idx_lon << 2) | col as u32;
-
-        let (row, col) = LOOKUP[bytes[1] as usize].ok_or(DigipinError::InvalidCharacter(bytes[1] as char))?;
-        idx_lat = (idx_lat << 2) | row as u32;
-        idx_lon = (idx_lon << 2) | col as u32;
-
-        let (row, col) = LOOKUP[bytes[2] as usize].ok_or(DigipinError::InvalidCharacter(bytes[2] as char))?;
-        idx_lat = (idx_lat << 2) | row as u32;
-        idx_lon = (idx_lon << 2) | col as u32;
-
-        let (row, col) = LOOKUP[bytes[4] as usize].ok_or(DigipinError::InvalidCharacter(bytes[4] as char))?;
-        idx_lat = (idx_lat << 2) | row as u32;
-        idx_lon = (idx_lon << 2) | col as u32;
-
-        let (row, col) = LOOKUP[bytes[5] as usize].ok_or(DigipinError::InvalidCharacter(bytes[5] as char))?;
-        idx_lat = (idx_lat << 2) | row as u32;
-        idx_lon = (idx_lon << 2) | col as u32;
-
-        let (row, col) = LOOKUP[bytes[6] as usize].ok_or(DigipinError::InvalidCharacter(bytes[6] as char))?;
-        idx_lat = (idx_lat << 2) | row as u32;
-        idx_lon = (idx_lon << 2) | col as u32;
-
-        let (row, col) = LOOKUP[bytes[8] as usize].ok_or(DigipinError::InvalidCharacter(bytes[8] as char))?;
-        idx_lat = (idx_lat << 2) | row as u32;
-        idx_lon = (idx_lon << 2) | col as u32;
-
-        let (row, col) = LOOKUP[bytes[9] as usize].ok_or(DigipinError::InvalidCharacter(bytes[9] as char))?;
-        idx_lat = (idx_lat << 2) | row as u32;
-        idx_lon = (idx_lon << 2) | col as u32;
-
-        let (row, col) = LOOKUP[bytes[10] as usize].ok_or(DigipinError::InvalidCharacter(bytes[10] as char))?;
-        idx_lat = (idx_lat << 2) | row as u32;
-        idx_lon = (idx_lon << 2) | col as u32;
-
-        let (row, col) = LOOKUP[bytes[11] as usize].ok_or(DigipinError::InvalidCharacter(bytes[11] as char))?;
-        idx_lat = (idx_lat << 2) | row as u32;
-        idx_lon = (idx_lon << 2) | col as u32;
-
+        add_pair!(bytes, 0, idx_lat, idx_lon);
+        add_pair!(bytes, 1, idx_lat, idx_lon);
+        add_pair!(bytes, 2, idx_lat, idx_lon);
+        add_pair!(bytes, 4, idx_lat, idx_lon);
+        add_pair!(bytes, 5, idx_lat, idx_lon);
+        add_pair!(bytes, 6, idx_lat, idx_lon);
+        add_pair!(bytes, 8, idx_lat, idx_lon);
+        add_pair!(bytes, 9, idx_lat, idx_lon);
+        add_pair!(bytes, 10, idx_lat, idx_lon);
+        add_pair!(bytes, 11, idx_lat, idx_lon);
         return Ok((idx_lat, idx_lon));
     }
 
@@ -173,7 +126,8 @@ fn parse_ascii(digipin: &str) -> DigipinResult<(u32, u32)> {
         if b == b'-' {
             continue;
         }
-        let (row, col) = LOOKUP[b as usize].ok_or(DigipinError::InvalidCharacter(b as char))?;
+        let key = if b >= b'a' && b <= b'z' { b - 32 } else { b };
+        let (row, col) = LOOKUP[key as usize].ok_or(DigipinError::InvalidCharacter(b as char))?;
         idx_lat = (idx_lat << 2) | row as u32;
         idx_lon = (idx_lon << 2) | col as u32;
         count += 1;
