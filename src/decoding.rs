@@ -74,23 +74,46 @@ fn parse_ascii(digipin: &str) -> DigipinResult<(u32, u32)> {
     if len == 10 {
         let mut idx_lat = 0u32;
         let mut idx_lon = 0u32;
-        for i in 0..10 {
-            let b = bytes[i];
-            let (row, col) = LOOKUP[b as usize].ok_or(DigipinError::InvalidCharacter(b as char))?;
-            idx_lat = (idx_lat << 2) | row as u32;
-            idx_lon = (idx_lon << 2) | col as u32;
+        macro_rules! add {
+            ($i:expr) => {{
+                let b = bytes[$i];
+                let (row, col) = LOOKUP[b as usize].ok_or(DigipinError::InvalidCharacter(b as char))?;
+                idx_lat = (idx_lat << 2) | row as u32;
+                idx_lon = (idx_lon << 2) | col as u32;
+            }};
         }
+        add!(0);
+        add!(1);
+        add!(2);
+        add!(3);
+        add!(4);
+        add!(5);
+        add!(6);
+        add!(7);
+        add!(8);
+        add!(9);
         return Ok((idx_lat, idx_lon));
     } else if len == 12 && bytes[3] == b'-' && bytes[7] == b'-' {
         let mut idx_lat = 0u32;
         let mut idx_lon = 0u32;
-        let indices = [0, 1, 2, 4, 5, 6, 8, 9, 10, 11];
-        for &i in &indices {
-            let b = bytes[i];
-            let (row, col) = LOOKUP[b as usize].ok_or(DigipinError::InvalidCharacter(b as char))?;
-            idx_lat = (idx_lat << 2) | row as u32;
-            idx_lon = (idx_lon << 2) | col as u32;
+        macro_rules! add {
+            ($i:expr) => {{
+                let b = bytes[$i];
+                let (row, col) = LOOKUP[b as usize].ok_or(DigipinError::InvalidCharacter(b as char))?;
+                idx_lat = (idx_lat << 2) | row as u32;
+                idx_lon = (idx_lon << 2) | col as u32;
+            }};
         }
+        add!(0);
+        add!(1);
+        add!(2);
+        add!(4);
+        add!(5);
+        add!(6);
+        add!(8);
+        add!(9);
+        add!(10);
+        add!(11);
         return Ok((idx_lat, idx_lon));
     }
 
