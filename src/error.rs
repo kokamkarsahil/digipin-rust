@@ -1,5 +1,6 @@
 use std::fmt;
 
+/// Errors that can occur during DIGIPIN operations
 #[derive(Debug, Clone, PartialEq)]
 pub enum DigipinError {
     /// Latitude is outside the valid range (2.5 to 38.5)
@@ -33,4 +34,5 @@ impl fmt::Display for DigipinError {
 
 impl std::error::Error for DigipinError {}
 
+/// Result type for DIGIPIN operations
 pub type DigipinResult<T> = Result<T, DigipinError>; 

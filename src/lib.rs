@@ -2,17 +2,15 @@
 use serde::{Deserialize, Serialize};
 
 mod constants;
-mod errors;
-mod types;
-mod encoding;
-mod decoding;
+mod coordinates;
+mod decode;
+mod encode;
+mod error;
 
-pub use types::Coordinates;
-pub use errors::{DigipinError, DigipinResult};
-pub use encoding::get_digipin;
-pub use decoding::get_coordinates_from_digipin;
-pub use types::GeoBounds;
-pub use decoding::get_bounds_from_digipin;
+pub use coordinates::Coordinates;
+pub use error::{DigipinError, DigipinResult};
+pub use encode::get_digipin;
+pub use decode::get_coordinates_from_digipin;
 
 #[cfg(test)]
 mod tests {
@@ -68,15 +66,5 @@ mod tests {
 
         assert_eq!(coords.latitude, coords_no_hyphens.latitude);
         assert_eq!(coords.longitude, coords_no_hyphens.longitude);
-    }
-
-    #[test]
-    fn test_bounds() {
-        let bounds = get_bounds_from_digipin("FCJ-3F9-8273").unwrap();
-        assert!(bounds.min_latitude < bounds.max_latitude);
-        assert!(bounds.min_longitude < bounds.max_longitude);
-        let center = get_coordinates_from_digipin("FCJ-3F9-8273").unwrap();
-        assert!(bounds.min_latitude <= center.latitude && center.latitude <= bounds.max_latitude);
-        assert!(bounds.min_longitude <= center.longitude && center.longitude <= bounds.max_longitude);
     }
 }

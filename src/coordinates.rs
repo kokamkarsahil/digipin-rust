@@ -17,22 +17,4 @@ impl Coordinates {
             longitude,
         }
     }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-pub struct GeoBounds {
-    pub min_latitude: f64,
-    pub max_latitude: f64,
-    pub min_longitude: f64,
-    pub max_longitude: f64,
-}
-
-/// Geographic bounds structure
-#[derive(Debug, Clone, Copy)]
-pub(crate) struct Bounds {
-    pub(crate) min_lat: f64,
-    pub(crate) max_lat: f64,
-    pub(crate) min_lon: f64,
-    pub(crate) max_lon: f64,
 } 
