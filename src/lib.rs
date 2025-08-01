@@ -8,9 +8,37 @@ const DIGIPIN_GRID: [[char; 4]; 4] = [
     ['K', '4', '5', '6'],
     ['L', 'M', 'P', 'T'],
 ];
+const LOOKUP: [Option<(u8, u8)>; 128] = {
+    let mut arr = [None; 128];
+    arr['F' as u8 as usize] = Some((0, 0));
+    arr['C' as u8 as usize] = Some((0, 1));
+    arr['9' as u8 as usize] = Some((0, 2));
+    arr['8' as u8 as usize] = Some((0, 3));
+    arr['J' as u8 as usize] = Some((1, 0));
+    arr['3' as u8 as usize] = Some((1, 1));
+    arr['2' as u8 as usize] = Some((1, 2));
+    arr['7' as u8 as usize] = Some((1, 3));
+    arr['K' as u8 as usize] = Some((2, 0));
+    arr['4' as u8 as usize] = Some((2, 1));
+    arr['5' as u8 as usize] = Some((2, 2));
+    arr['6' as u8 as usize] = Some((2, 3));
+    arr['L' as u8 as usize] = Some((3, 0));
+    arr['M' as u8 as usize] = Some((3, 1));
+    arr['P' as u8 as usize] = Some((3, 2));
+    arr['T' as u8 as usize] = Some((3, 3));
+    arr['f' as u8 as usize] = Some((0, 0));
+    arr['c' as u8 as usize] = Some((0, 1));
+    arr['j' as u8 as usize] = Some((1, 0));
+    arr['k' as u8 as usize] = Some((2, 0));
+    arr['l' as u8 as usize] = Some((3, 0));
+    arr['m' as u8 as usize] = Some((3, 1));
+    arr['p' as u8 as usize] = Some((3, 2));
+    arr['t' as u8 as usize] = Some((3, 3));
+    arr
+};
 
 const SPAN: f64 = 36.0;
-const POWER_F: f64 = 1_048_576.0;
+const POWER: u32 = 1 << 20;
 
 /// Geographic bounds for DIGIPIN encoding (covers India)
 const BOUNDS: Bounds = Bounds {
@@ -113,18 +141,16 @@ pub fn get_digipin(latitude: f64, longitude: f64) -> DigipinResult<String> {
     }
 
     let frac_lat = (BOUNDS.max_lat - latitude) / SPAN;
-    let idx_lat = (frac_lat * POWER_F).floor().min(POWER_F - 1.0) as u32;
+    let idx_lat = ((frac_lat * (POWER as f64)) as u32).min(POWER - 1);
     let frac_lon = (longitude - BOUNDS.min_lon) / SPAN;
-    let idx_lon = (frac_lon * POWER_F).floor().min(POWER_F - 1.0) as u32;
-
+    let idx_lon = ((frac_lon * (POWER as f64)) as u32).min(POWER - 1);
     let mut digipin = String::with_capacity(12);
-
-    for i in (0..10).rev() {
-        let shift = 2 * i;
+    for level in 0..10 {
+        let shift = 18 - 2 * level;
         let row = ((idx_lat >> shift) & 3) as usize;
         let col = ((idx_lon >> shift) & 3) as usize;
         digipin.push(DIGIPIN_GRID[row][col]);
-        if i == 7 || i == 4 {
+        if level == 2 || level == 5 {
             digipin.push('-');
         }
     }
@@ -173,9 +199,9 @@ pub fn get_coordinates_from_digipin(digipin: &str) -> DigipinResult<Coordinates>
         return Err(DigipinError::InvalidLength(count + 1));
     }
 
-    let frac_lat = (idx_lat as f64 + 0.5) / POWER_F;
+    let frac_lat = (idx_lat as f64 + 0.5) / (POWER as f64);
     let center_lat = BOUNDS.max_lat - frac_lat * SPAN;
-    let frac_lon = (idx_lon as f64 + 0.5) / POWER_F;
+    let frac_lon = (idx_lon as f64 + 0.5) / (POWER as f64);
     let center_lon = BOUNDS.min_lon + frac_lon * SPAN;
 
     Ok(Coordinates::new(center_lat, center_lon))
@@ -183,24 +209,13 @@ pub fn get_coordinates_from_digipin(digipin: &str) -> DigipinResult<Coordinates>
 
 /// Find the position of a character in the DIGIPIN grid
 fn find_char_in_grid(ch: char) -> DigipinResult<(usize, usize)> {
-    match ch {
-        'F' => Ok((0, 0)),
-        'C' => Ok((0, 1)),
-        '9' => Ok((0, 2)),
-        '8' => Ok((0, 3)),
-        'J' => Ok((1, 0)),
-        '3' => Ok((1, 1)),
-        '2' => Ok((1, 2)),
-        '7' => Ok((1, 3)),
-        'K' => Ok((2, 0)),
-        '4' => Ok((2, 1)),
-        '5' => Ok((2, 2)),
-        '6' => Ok((2, 3)),
-        'L' => Ok((3, 0)),
-        'M' => Ok((3, 1)),
-        'P' => Ok((3, 2)),
-        'T' => Ok((3, 3)),
-        _ => Err(DigipinError::InvalidCharacter(ch)),
+    let idx = ch as u32;
+    if idx > 127 {
+        return Err(DigipinError::InvalidCharacter(ch));
+    }
+    match LOOKUP[idx as usize] {
+        Some((row, col)) => Ok((row as usize, col as usize)),
+        None => Err(DigipinError::InvalidCharacter(ch)),
     }
 }
 
