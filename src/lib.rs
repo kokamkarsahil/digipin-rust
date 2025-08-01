@@ -67,4 +67,22 @@ mod tests {
         assert_eq!(coords.latitude, coords_no_hyphens.latitude);
         assert_eq!(coords.longitude, coords_no_hyphens.longitude);
     }
+
+    #[test]
+    fn test_boundary_roundtrip() {
+        use super::constants::{BOUNDS, SPAN, POWER};
+        let half_cell = (SPAN / (POWER as f64)) / 2.0;
+        let corners = [
+            (BOUNDS.min_lat, BOUNDS.min_lon),
+            (BOUNDS.min_lat, BOUNDS.max_lon),
+            (BOUNDS.max_lat, BOUNDS.min_lon),
+            (BOUNDS.max_lat, BOUNDS.max_lon),
+        ];
+        for &(orig_lat, orig_lon) in &corners {
+            let digipin = get_digipin(orig_lat, orig_lon).unwrap();
+            let decoded = get_coordinates_from_digipin(&digipin).unwrap();
+            assert!((decoded.latitude - orig_lat).abs() <= half_cell + 1e-10);
+            assert!((decoded.longitude - orig_lon).abs() <= half_cell + 1e-10);
+        }
+    }
 }
