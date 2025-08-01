@@ -264,7 +264,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 ```
 
 This will output something like:
-```
+```text
 Latitude range: 28.613888 to 28.613922
 Longitude range: 77.208984 to 77.209018
 Approximate cell size: 3.81m x 3.25m
