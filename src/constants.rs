@@ -23,14 +23,7 @@ pub(crate) const LOOKUP: [Option<(u8, u8)>; 128] = {
     arr[b'M' as usize] = Some((3, 1));
     arr[b'P' as usize] = Some((3, 2));
     arr[b'T' as usize] = Some((3, 3));
-    arr[b'f' as usize] = Some((0, 0));
-    arr[b'c' as usize] = Some((0, 1));
-    arr[b'j' as usize] = Some((1, 0));
-    arr[b'k' as usize] = Some((2, 0));
-    arr[b'l' as usize] = Some((3, 0));
-    arr[b'm' as usize] = Some((3, 1));
-    arr[b'p' as usize] = Some((3, 2));
-    arr[b't' as usize] = Some((3, 3));
+
     arr
 };
 pub(crate) const SPAN: f64 = 36.0;
