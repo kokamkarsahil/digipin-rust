@@ -28,6 +28,7 @@ pub(crate) const LOOKUP: [Option<(u8, u8)>; 128] = {
 };
 pub(crate) const SPAN: f64 = 36.0;
 pub(crate) const POWER: u32 = 1 << 20;
+pub(crate) const ENCODE_SCALE_FACTOR: f64 = (POWER as f64) / SPAN;
 
 /// Geographic bounds structure
 #[derive(Debug, Clone, Copy)]

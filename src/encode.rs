@@ -1,4 +1,7 @@
-use crate::{constants::{BOUNDS, DIGIPIN_GRID, POWER, SPAN}, error::DigipinResult};
+use crate::{
+    constants::{BOUNDS, DIGIPIN_GRID, ENCODE_SCALE_FACTOR, POWER},
+    error::DigipinResult,
+};
 
 /// Encodes latitude and longitude coordinates into a 10-digit alphanumeric DIGIPIN.
 ///
@@ -28,21 +31,25 @@ pub fn get_digipin(latitude: f64, longitude: f64) -> DigipinResult<String> {
         return Err(crate::error::DigipinError::LongitudeOutOfRange(longitude));
     }
 
-    let frac_lat = (BOUNDS.max_lat - latitude) / SPAN;
-    let idx_lat = ((frac_lat * (POWER as f64)) as u32).min(POWER - 1);
-    let frac_lon = (longitude - BOUNDS.min_lon) / SPAN;
-    let idx_lon = ((frac_lon * (POWER as f64)) as u32).min(POWER - 1);
+    let idx_lat = (((BOUNDS.max_lat - latitude) * ENCODE_SCALE_FACTOR) as u32).min(POWER - 1);
+    let idx_lon = (((longitude - BOUNDS.min_lon) * ENCODE_SCALE_FACTOR) as u32).min(POWER - 1);
 
-    let mut digipin = String::with_capacity(12);
+    let mut buffer = [0u8; 12];
+    let mut i = 0;
+
     for level in 0..10 {
         let shift = 18 - 2 * level;
         let row = ((idx_lat >> shift) & 3) as usize;
         let col = ((idx_lon >> shift) & 3) as usize;
-        digipin.push(DIGIPIN_GRID[row][col]);
+        buffer[i] = DIGIPIN_GRID[row][col] as u8;
+        i += 1;
+
         if level == 2 || level == 5 {
-            digipin.push('-');
+            buffer[i] = b'-';
+            i += 1;
         }
     }
 
-    Ok(digipin)
+    // This is safe because DIGIPIN_GRID contains only ASCII characters.
+    Ok(unsafe { std::str::from_utf8_unchecked(&buffer) }.to_string())
 } 
