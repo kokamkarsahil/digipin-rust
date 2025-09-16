@@ -29,44 +29,6 @@ mod tests {
         assert!((decoded.longitude - original_lon).abs() < 0.01);
     }
 
-    #[test]
-    fn test_invalid_coordinates() {
-        // Test latitude out of range
-        assert!(matches!(
-            get_digipin(50.0, 77.0),
-            Err(DigipinError::LatitudeOutOfRange(_))
-        ));
-
-        // Test longitude out of range
-        assert!(matches!(
-            get_digipin(28.0, 120.0),
-            Err(DigipinError::LongitudeOutOfRange(_))
-        ));
-    }
-
-    #[test]
-    fn test_invalid_digipin() {
-        // Test invalid length
-        assert!(matches!(
-            get_coordinates_from_digipin("FCJ-3F9"),
-            Err(DigipinError::InvalidLength(_))
-        ));
-
-        // Test invalid character
-        assert!(matches!(
-            get_coordinates_from_digipin("FCJ-3F9-82Z3"),
-            Err(DigipinError::InvalidCharacter('Z'))
-        ));
-    }
-
-    #[test]
-    fn test_digipin_with_hyphens() {
-        let coords = get_coordinates_from_digipin("FCJ-3F9-8273").unwrap();
-        let coords_no_hyphens = get_coordinates_from_digipin("FCJ3F98273").unwrap();
-
-        assert_eq!(coords.latitude, coords_no_hyphens.latitude);
-        assert_eq!(coords.longitude, coords_no_hyphens.longitude);
-    }
 
     #[test]
     fn test_boundary_roundtrip() {

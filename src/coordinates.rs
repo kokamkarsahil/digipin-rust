@@ -1,3 +1,8 @@
+//! # Coordinates Module
+//!
+//! This module defines the `Coordinates` struct, which is used to represent
+//! a geographical location with latitude and longitude.
+
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 

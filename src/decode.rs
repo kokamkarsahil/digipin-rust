@@ -1,3 +1,9 @@
+//! # Decode Module
+//!
+//! This module handles the decoding of a DIGIPIN string back into geographical
+//! coordinates. It includes logic for validating the format of the DIGIPIN string
+//! and converting it back to a `Coordinates` struct.
+
 use crate::{constants::{BOUNDS, LOOKUP, POWER, SPAN}, coordinates::Coordinates, error::DigipinResult};
 
 /// Decodes a DIGIPIN string back into its central latitude and longitude coordinates.
@@ -41,6 +47,8 @@ pub fn get_coordinates_from_digipin(digipin: &str) -> DigipinResult<Coordinates>
         return Err(crate::error::DigipinError::InvalidLength(count + 1));
     }
 
+    // Convert the integer indices back to fractional coordinates.
+    // The `+ 0.5` is added to find the center of the grid cell, improving accuracy.
     let frac_lat = (idx_lat as f64 + 0.5) / (POWER as f64);
     let center_lat = BOUNDS.max_lat - frac_lat * SPAN;
     let frac_lon = (idx_lon as f64 + 0.5) / (POWER as f64);
@@ -59,4 +67,34 @@ fn find_char_in_grid(ch: char) -> DigipinResult<(usize, usize)> {
         Some((row, col)) => Ok((row as usize, col as usize)),
         None => Err(crate::error::DigipinError::InvalidCharacter(ch)),
     }
-} 
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::error::DigipinError;
+
+    #[test]
+    fn test_invalid_digipin() {
+        // Test invalid length
+        assert!(matches!(
+            get_coordinates_from_digipin("FCJ-3F9"),
+            Err(DigipinError::InvalidLength(_))
+        ));
+
+        // Test invalid character
+        assert!(matches!(
+            get_coordinates_from_digipin("FCJ-3F9-82Z3"),
+            Err(DigipinError::InvalidCharacter('Z'))
+        ));
+    }
+
+    #[test]
+    fn test_digipin_with_hyphens() {
+        let coords = get_coordinates_from_digipin("FCJ-3F9-8273").unwrap();
+        let coords_no_hyphens = get_coordinates_from_digipin("FCJ3F98273").unwrap();
+
+        assert_eq!(coords.latitude, coords_no_hyphens.latitude);
+        assert_eq!(coords.longitude, coords_no_hyphens.longitude);
+    }
+}

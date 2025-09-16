@@ -1,3 +1,9 @@
+//! # Encode Module
+//!
+//! This module provides the functionality to encode geographical coordinates (latitude and longitude)
+//! into a DIGIPIN string. It handles validation to ensure the coordinates fall within the
+//! accepted bounds for India.
+
 use crate::{constants::{BOUNDS, DIGIPIN_GRID, POWER, SPAN}, error::DigipinResult};
 
 /// Encodes latitude and longitude coordinates into a 10-digit alphanumeric DIGIPIN.
@@ -28,9 +34,13 @@ pub fn get_digipin(latitude: f64, longitude: f64) -> DigipinResult<String> {
         return Err(crate::error::DigipinError::LongitudeOutOfRange(longitude));
     }
 
+    // Normalize latitude and longitude to a fraction between 0.0 and 1.0
     let frac_lat = (BOUNDS.max_lat - latitude) / SPAN;
-    let idx_lat = ((frac_lat * (POWER as f64)) as u32).min(POWER - 1);
     let frac_lon = (longitude - BOUNDS.min_lon) / SPAN;
+
+    // Scale the fractional coordinates to integer indices based on the grid precision.
+    // `.min(POWER - 1)` handles the edge case where the coordinate is exactly on the boundary.
+    let idx_lat = ((frac_lat * (POWER as f64)) as u32).min(POWER - 1);
     let idx_lon = ((frac_lon * (POWER as f64)) as u32).min(POWER - 1);
 
     let mut digipin = String::with_capacity(12);
@@ -45,4 +55,25 @@ pub fn get_digipin(latitude: f64, longitude: f64) -> DigipinResult<String> {
     }
 
     Ok(digipin)
-} 
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::error::DigipinError;
+
+    #[test]
+    fn test_invalid_coordinates() {
+        // Test latitude out of range
+        assert!(matches!(
+            get_digipin(50.0, 77.0),
+            Err(DigipinError::LatitudeOutOfRange(_))
+        ));
+
+        // Test longitude out of range
+        assert!(matches!(
+            get_digipin(28.0, 120.0),
+            Err(DigipinError::LongitudeOutOfRange(_))
+        ));
+    }
+}

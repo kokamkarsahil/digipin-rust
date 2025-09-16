@@ -1,3 +1,9 @@
+//! # Error Module
+//!
+//! This module defines the custom error types used throughout the `digipin` library.
+//! It includes the `DigipinError` enum, which covers all possible failure scenarios,
+//! and a `DigipinResult` type alias for convenience.
+
 use std::fmt;
 
 /// Errors that can occur during DIGIPIN operations

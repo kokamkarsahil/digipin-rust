@@ -1,3 +1,9 @@
+//! # Constants Module
+//!
+//! This module defines the core constants used in the DIGIPIN encoding and decoding algorithms.
+//! These include the character grid, geographical bounds, and mathematical constants required
+//! for the conversions.
+
 /// DIGIPIN grid used for encoding/decoding
 pub(crate) const DIGIPIN_GRID: [[char; 4]; 4] = [
     ['F', 'C', '9', '8'],
