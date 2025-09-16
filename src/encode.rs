@@ -29,20 +29,29 @@ pub fn get_digipin(latitude: f64, longitude: f64) -> DigipinResult<String> {
     }
 
     let frac_lat = (BOUNDS.max_lat - latitude) / SPAN;
+    // We use `min(POWER - 1)` to handle the edge case where latitude is exactly `BOUNDS.min_lat`.
+    // In that case, `frac_lat` is 1.0, and `(frac_lat * POWER)` would be `POWER`, which is out of bounds for a 0-indexed system.
     let idx_lat = ((frac_lat * (POWER as f64)) as u32).min(POWER - 1);
+
     let frac_lon = (longitude - BOUNDS.min_lon) / SPAN;
+    // We use `min(POWER - 1)` to handle the edge case where longitude is exactly `BOUNDS.max_lon`.
+    // In that case, `frac_lon` is 1.0, and `(frac_lon * POWER)` would be `POWER`, which is out of bounds for a 0-indexed system.
     let idx_lon = ((frac_lon * (POWER as f64)) as u32).min(POWER - 1);
 
-    let mut digipin = String::with_capacity(12);
+    let mut chars = ['\0'; 10];
     for level in 0..10 {
         let shift = 18 - 2 * level;
         let row = ((idx_lat >> shift) & 3) as usize;
         let col = ((idx_lon >> shift) & 3) as usize;
-        digipin.push(DIGIPIN_GRID[row][col]);
-        if level == 2 || level == 5 {
-            digipin.push('-');
-        }
+        chars[level] = DIGIPIN_GRID[row][col];
     }
 
-    Ok(digipin)
+    let mut s = String::with_capacity(12);
+    s.extend(&chars[0..3]);
+    s.push('-');
+    s.extend(&chars[3..6]);
+    s.push('-');
+    s.extend(&chars[6..10]);
+
+    Ok(s)
 } 

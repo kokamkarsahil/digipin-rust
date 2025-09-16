@@ -25,20 +25,19 @@ pub fn get_coordinates_from_digipin(digipin: &str) -> DigipinResult<Coordinates>
     let mut idx_lon: u32 = 0;
     let mut count = 0;
 
-    for _ in 0..10 {
-        match char_iter.next() {
-            Some(ch) => {
-                let (row, col) = find_char_in_grid(ch)?;
-                idx_lat = (idx_lat << 2) | row as u32;
-                idx_lon = (idx_lon << 2) | col as u32;
-                count += 1;
-            }
-            None => return Err(crate::error::DigipinError::InvalidLength(count)),
+    while let Some(ch) = char_iter.next() {
+        if count == 10 {
+            // Too many characters
+            return Err(crate::error::DigipinError::InvalidLength(11));
         }
+        let (row, col) = find_char_in_grid(ch)?;
+        idx_lat = (idx_lat << 2) | row as u32;
+        idx_lon = (idx_lon << 2) | col as u32;
+        count += 1;
     }
 
-    if char_iter.next().is_some() {
-        return Err(crate::error::DigipinError::InvalidLength(count + 1));
+    if count != 10 {
+        return Err(crate::error::DigipinError::InvalidLength(count));
     }
 
     let frac_lat = (idx_lat as f64 + 0.5) / (POWER as f64);
@@ -50,7 +49,7 @@ pub fn get_coordinates_from_digipin(digipin: &str) -> DigipinResult<Coordinates>
 }
 
 /// Find the position of a character in the DIGIPIN grid
-fn find_char_in_grid(ch: char) -> DigipinResult<(usize, usize)> {
+const fn find_char_in_grid(ch: char) -> DigipinResult<(usize, usize)> {
     let idx = ch as u32;
     if idx > 127 {
         return Err(crate::error::DigipinError::InvalidCharacter(ch));
