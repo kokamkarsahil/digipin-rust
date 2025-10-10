@@ -1,6 +1,6 @@
 [package]
 name = "digipin"
-version = "0.0.3"
+version = "0.0.4"
 edition = "2021"
 authors = ["Sahil"]
 description = "DIGIPIN Encoder and Decoder Library - Encode latitude & longitude into 10-digit alphanumeric DIGIPIN codes"
