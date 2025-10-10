@@ -8,13 +8,3 @@ pub struct Coordinates {
     pub latitude: f64,
     pub longitude: f64,
 }
-
-impl Coordinates {
-    /// Create a new coordinate pair
-    pub fn new(latitude: f64, longitude: f64) -> Self {
-        Self {
-            latitude,
-            longitude,
-        }
-    }
-} 
