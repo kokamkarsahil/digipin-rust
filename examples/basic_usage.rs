@@ -29,7 +29,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Test with different locations
     println!("\n--- Testing with Mumbai coordinates ---");
-    let mumbai_coords = Coordinates::new(19.0760, 72.8777);
+    let mumbai_coords = Coordinates { latitude: 19.0760, longitude: 72.8777 };
     let mumbai_digipin = get_digipin(mumbai_coords.latitude, mumbai_coords.longitude)?;
     let mumbai_decoded = get_coordinates_from_digipin(&mumbai_digipin)?;
 

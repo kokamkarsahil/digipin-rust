@@ -46,7 +46,7 @@ pub fn get_coordinates_from_digipin(digipin: &str) -> DigipinResult<Coordinates>
     let frac_lon = (idx_lon as f64 + 0.5) / (POWER as f64);
     let center_lon = BOUNDS.min_lon + frac_lon * SPAN;
 
-    Ok(Coordinates::new(center_lat, center_lon))
+    Ok(Coordinates { latitude: center_lat, longitude: center_lon })
 }
 
 /// Find the position of a character in the DIGIPIN grid
