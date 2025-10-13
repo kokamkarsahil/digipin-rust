@@ -35,7 +35,6 @@ digipin = "0.1.0"
 
 # For Serde support
 digipin = { version = "0.1.0", features = ["serde"] }
-```toml
 [dependencies]
 digipin = "0.1.0"
 
