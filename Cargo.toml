@@ -13,8 +13,18 @@ categories = ["encoding", "algorithms"]
 serde = { version = "1.0", features = ["derive"], optional = true }
 
 [features]
-default = []
+default = ["mimalloc"]
 serde = ["dep:serde"]
+jemalloc = ["dep:jemallocator"]
+mimalloc = ["dep:mimalloc"]
+
+[dependencies.jemallocator]
+version = "0.5.0"
+optional = true
+
+[dependencies.mimalloc]
+version = "0.1.39"
+optional = true
 
 [dev-dependencies]
 divan = { version = "3.0.4", package = "codspeed-divan-compat" }

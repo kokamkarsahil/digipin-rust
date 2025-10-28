@@ -1,3 +1,13 @@
+// Use `mimalloc` if the `mimalloc` feature is enabled.
+#[cfg(feature = "mimalloc")]
+#[global_allocator]
+static ALLOC: mimalloc::MiMalloc = mimalloc::MiMalloc;
+
+// Use `jemalloc` if the `jemalloc` feature is enabled, but `mimalloc` is not.
+#[cfg(all(feature = "jemalloc", not(feature = "mimalloc")))]
+#[global_allocator]
+static ALLOC: jemallocator::Jemalloc = jemallocator::Jemalloc;
+
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
