@@ -9,7 +9,7 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
-groups:
+    groups:
       all-cargo-dependencies:
         patterns:
           - "*"
