@@ -1,23 +1,27 @@
 use crate::{constants::{BOUNDS, LOOKUP, POWER, SPAN}, coordinates::Coordinates, error::DigipinResult};
 
-/// Decodes a DIGIPIN string back into its central latitude and longitude coordinates.
+/// Decodes a DIGIPIN string into its corresponding geographical coordinates.
+///
+/// This function accepts DIGIPIN codes both with and without hyphens. It returns the
+/// center coordinates of the geographical area the DIGIPIN represents.
 ///
 /// # Arguments
-/// * `digipin` - A DIGIPIN string (with or without hyphens)
+///
+/// * `digipin` - The DIGIPIN string to decode.
 ///
 /// # Returns
-/// A `Coordinates` struct containing the decoded latitude and longitude
 ///
-/// # Errors
-/// Returns `DigipinError` if the DIGIPIN is invalid.
+/// A `DigipinResult` containing the `Coordinates` on success, or a `DigipinError` if
+/// the DIGIPIN string is invalid (e.g., wrong length, invalid characters).
 ///
 /// # Example
+///
 /// ```
 /// use digipin::get_coordinates_from_digipin;
 ///
-/// let coords = get_coordinates_from_digipin("FCJ-3F9-8273")?;
-/// println!("Latitude: {}, Longitude: {}", coords.latitude, coords.longitude);
-/// # Ok::<(), digipin::DigipinError>(())
+/// let coords = get_coordinates_from_digipin("39J-438-TJC7").unwrap();
+/// assert!((coords.latitude - 28.6139).abs() < 1e-4);
+/// assert!((coords.longitude - 77.2090).abs() < 1e-4);
 /// ```
 pub fn get_coordinates_from_digipin(digipin: &str) -> DigipinResult<Coordinates> {
     let mut char_iter = digipin.chars().filter(|&c| c != '-');

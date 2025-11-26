@@ -1,24 +1,27 @@
 use crate::{constants::{BOUNDS, DIGIPIN_GRID, POWER, SPAN}, error::DigipinResult};
 
-/// Encodes latitude and longitude coordinates into a 10-digit alphanumeric DIGIPIN.
+/// Encodes geographical coordinates into a 10-digit alphanumeric DIGIPIN code.
+///
+/// The function takes a latitude and longitude and returns a formatted DIGIPIN string
+/// (e.g., "39J-438-TJC7").
 ///
 /// # Arguments
-/// * `latitude` - Latitude coordinate (must be between 2.5 and 38.5)
-/// * `longitude` - Longitude coordinate (must be between 63.5 and 99.5)
+///
+/// * `latitude` - The latitude, in decimal degrees. Must be within `6.0..=38.0`.
+/// * `longitude` - The longitude, in decimal degrees. Must be within `68.0..=98.0`.
 ///
 /// # Returns
-/// A formatted DIGIPIN string with hyphens (e.g., "FCJ-3F9-8273")
 ///
-/// # Errors
-/// Returns `DigipinError` if coordinates are outside the valid range.
+/// A `DigipinResult` containing the formatted DIGIPIN string on success, or a
+/// `DigipinError` if the coordinates are out of bounds.
 ///
 /// # Example
+///
 /// ```
 /// use digipin::get_digipin;
 ///
-/// let digipin = get_digipin(28.6139, 77.2090)?; // New Delhi coordinates
-/// println!("DIGIPIN: {}", digipin);
-/// # Ok::<(), digipin::DigipinError>(())
+/// let digipin = get_digipin(28.6139, 77.2090).unwrap(); // New Delhi
+/// assert_eq!(digipin, "39J-438-TJC7");
 /// ```
 pub fn get_digipin(latitude: f64, longitude: f64) -> DigipinResult<String> {
     if !(BOUNDS.min_lat..=BOUNDS.max_lat).contains(&latitude) {

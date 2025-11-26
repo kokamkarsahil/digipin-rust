@@ -1,3 +1,34 @@
+//! # digipin
+//!
+//! A Rust library for encoding and decoding latitude and longitude coordinates into 10-digit
+//! alphanumeric [DIGIPIN](https://www.indiapost.gov.in/VAS/Pages/digipin.aspx) codes.
+//!
+//! DIGIPIN is a geocoding system by India Post that represents any location in India with a
+//! 10-digit code, offering a precise, human-readable alternative to coordinates.
+//!
+//! ## 🚀 Quick Start
+//!
+//! ```rust
+//! use digipin::{get_digipin, get_coordinates_from_digipin};
+//!
+//! fn main() -> Result<(), Box<dyn std::error::Error>> {
+//!     // Encode New Delhi's coordinates to a DIGIPIN
+//!     let digipin = get_digipin(28.6139, 77.2090)?;
+//!     println!("📍 DIGIPIN: {}", digipin); // Example: 39J-438-TJC7
+//!
+//!     // Decode the DIGIPIN back to coordinates
+//!     let coords = get_coordinates_from_digipin(&digipin)?;
+//!     println!("📍 Location: {:.4}°N, {:.4}°E", coords.latitude, coords.longitude);
+//!
+//!     Ok(())
+//! }
+//! ```
+//!
+//! ## ✨ Features
+//!
+//! - **`serde`**: Enable the `serde` feature to implement `Serialize` and `Deserialize`
+//!   for the `Coordinates` struct, allowing for easy integration with JSON and other formats.
+
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
