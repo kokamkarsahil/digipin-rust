@@ -1,15 +1,17 @@
 use std::fmt;
 
-/// Errors that can occur during DIGIPIN operations
+/// Represents the possible errors that can occur during DIGIPIN encoding or decoding.
 #[derive(Debug, Clone, PartialEq)]
 pub enum DigipinError {
-    /// Latitude is outside the valid range (2.5 to 38.5)
+    /// Returned when the latitude is outside the valid range of `6.0..=38.0`.
     LatitudeOutOfRange(f64),
-    /// Longitude is outside the valid range (63.5 to 99.5)
+    /// Returned when the longitude is outside the valid range of `68.0..=98.0`.
     LongitudeOutOfRange(f64),
-    /// DIGIPIN string has invalid length (must be 10 characters excluding hyphens)
+    /// Returned when the DIGIPIN string has a length other than 10 characters
+    /// (excluding hyphens).
     InvalidLength(usize),
-    /// DIGIPIN contains invalid characters
+    /// Returned when the DIGIPIN string contains a character that is not part of the
+    /// valid charset.
     InvalidCharacter(char),
 }
 
