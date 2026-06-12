@@ -29,6 +29,12 @@ pub(crate) const LOOKUP: [Option<(u8, u8)>; 128] = {
 pub(crate) const SPAN: f64 = 36.0;
 pub(crate) const POWER: u32 = 1 << 20;
 
+/// Precomputed reciprocal: POWER / SPAN
+pub(crate) const INV_SPAN_MUL_POWER: f64 = (POWER as f64) / SPAN;
+
+/// Precomputed reciprocal: SPAN / POWER
+pub(crate) const INV_POWER_MUL_SPAN: f64 = SPAN / (POWER as f64);
+
 /// Geographic bounds structure
 #[derive(Debug, Clone, Copy)]
 pub(crate) struct Bounds {

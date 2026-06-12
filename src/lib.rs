@@ -150,34 +150,34 @@ mod tests {
     fn test_digipin_grid_is_u8_and_correct() {
         use super::constants::DIGIPIN_GRID;
         // Row 0
-        assert_eq!(DIGIPIN_GRID[0][0], b'F');
-        assert_eq!(DIGIPIN_GRID[0][1], b'C');
-        assert_eq!(DIGIPIN_GRID[0][2], b'9');
-        assert_eq!(DIGIPIN_GRID[0][3], b'8');
+        assert_eq!(DIGIPIN_GRID[0][0], 'F');
+        assert_eq!(DIGIPIN_GRID[0][1], 'C');
+        assert_eq!(DIGIPIN_GRID[0][2], '9');
+        assert_eq!(DIGIPIN_GRID[0][3], '8');
         // Row 1
-        assert_eq!(DIGIPIN_GRID[1][0], b'J');
-        assert_eq!(DIGIPIN_GRID[1][1], b'3');
-        assert_eq!(DIGIPIN_GRID[1][2], b'2');
-        assert_eq!(DIGIPIN_GRID[1][3], b'7');
+        assert_eq!(DIGIPIN_GRID[1][0], 'J');
+        assert_eq!(DIGIPIN_GRID[1][1], '3');
+        assert_eq!(DIGIPIN_GRID[1][2], '2');
+        assert_eq!(DIGIPIN_GRID[1][3], '7');
         // Row 2
-        assert_eq!(DIGIPIN_GRID[2][0], b'K');
-        assert_eq!(DIGIPIN_GRID[2][1], b'4');
-        assert_eq!(DIGIPIN_GRID[2][2], b'5');
-        assert_eq!(DIGIPIN_GRID[2][3], b'6');
+        assert_eq!(DIGIPIN_GRID[2][0], 'K');
+        assert_eq!(DIGIPIN_GRID[2][1], '4');
+        assert_eq!(DIGIPIN_GRID[2][2], '5');
+        assert_eq!(DIGIPIN_GRID[2][3], '6');
         // Row 3
-        assert_eq!(DIGIPIN_GRID[3][0], b'L');
-        assert_eq!(DIGIPIN_GRID[3][1], b'M');
-        assert_eq!(DIGIPIN_GRID[3][2], b'P');
-        assert_eq!(DIGIPIN_GRID[3][3], b'T');
+        assert_eq!(DIGIPIN_GRID[3][0], 'L');
+        assert_eq!(DIGIPIN_GRID[3][1], 'M');
+        assert_eq!(DIGIPIN_GRID[3][2], 'P');
+        assert_eq!(DIGIPIN_GRID[3][3], 'T');
     }
 
     #[test]
     fn test_digipin_grid_chars_are_valid_ascii() {
         use super::constants::DIGIPIN_GRID;
         for row in &DIGIPIN_GRID {
-            for &byte in row {
-                assert!(byte.is_ascii(), "grid byte {byte} is not ASCII");
-                assert_ne!(byte, b'-', "grid should not contain hyphens");
+            for &ch in row {
+                assert!(ch.is_ascii(), "grid char {ch} is not ASCII");
+                assert_ne!(ch, '-', "grid should not contain hyphens");
             }
         }
     }
@@ -394,7 +394,7 @@ mod tests {
         // Encode via the public API and verify the index math produces stable output
         // by checking that two nearby coordinates map to the same DIGIPIN (within one cell)
         // or consecutive DIGIPINs (when straddling a boundary).
-        use super::constants::{BOUNDS, INV_SPAN_MUL_POWER, POWER, SPAN};
+        use super::constants::{INV_SPAN_MUL_POWER, POWER, SPAN};
         let cell_size = SPAN / (POWER as f64);
         let lat = 28.6139;
         let lon = 77.2090;
