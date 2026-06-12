@@ -3,25 +3,24 @@ use crate::{
     error::DigipinResult,
 };
 
-/// Encodes latitude and longitude coordinates into a 10-digit alphanumeric DIGIPIN.
+/// Encodes latitude and longitude into a 10-character alphanumeric DIGIPIN formatted with hyphens.
 ///
-/// # Arguments
-/// * `latitude` - Latitude coordinate (must be between 2.5 and 38.5)
-/// * `longitude` - Longitude coordinate (must be between 63.5 and 99.5)
-///
-/// # Returns
-/// A formatted DIGIPIN string with hyphens (e.g., "FCJ-3F9-8273")
+/// Latitude must be between 2.5 and 38.5; longitude must be between 63.5 and 99.5. The returned
+/// string contains 10 characters from the DIGIPIN alphabet with hyphens after the 3rd and 6th
+/// characters (format: "XXX-XXX-XXXX").
 ///
 /// # Errors
-/// Returns `DigipinError` if coordinates are outside the valid range.
 ///
-/// # Example
+/// Returns `DigipinError::LatitudeOutOfRange(latitude)` or
+/// `DigipinError::LongitudeOutOfRange(longitude)` when the inputs fall outside the valid bounds.
+///
+/// # Examples
+///
 /// ```
-/// use digipin::get_digipin;
-///
-/// let digipin = get_digipin(28.6139, 77.2090)?; // New Delhi coordinates
-/// println!("DIGIPIN: {}", digipin);
-/// # Ok::<(), digipin::DigipinError>(())
+/// let p = get_digipin(28.6139, 77.2090).unwrap(); // New Delhi coordinates
+/// assert_eq!(p.len(), 12);
+/// assert_eq!(p.chars().nth(3).unwrap(), '-');
+/// assert_eq!(p.chars().nth(7).unwrap(), '-');
 /// ```
 pub fn get_digipin(latitude: f64, longitude: f64) -> DigipinResult<String> {
     if !(BOUNDS.min_lat..=BOUNDS.max_lat).contains(&latitude) {

@@ -14,6 +14,16 @@ fn decode() {
     get_coordinates_from_digipin(pin).unwrap();
 }
 
+/// Entrypoint for the benchmark binary that runs the divan benchmark harness.
+///
+/// # Examples
+///
+/// ```no_run
+/// // Runs the divan benchmark harness for this binary.
+/// fn main() {
+///     divan::main();
+/// }
+/// ```
 fn main() {
     divan::main();
 }

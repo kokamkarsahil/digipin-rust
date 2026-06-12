@@ -4,24 +4,32 @@ use crate::{
     error::DigipinResult,
 };
 
-/// Decodes a DIGIPIN string back into its central latitude and longitude coordinates.
+/// Decode a DIGIPIN string into the geographic coordinates of its cell center.
+///
+/// The input may include hyphens for readability; exactly 10 DIGIPIN symbols (excluding hyphens)
+/// are required. Invalid characters or incorrect symbol counts produce an error.
 ///
 /// # Arguments
-/// * `digipin` - A DIGIPIN string (with or without hyphens)
+///
+/// * `digipin` - A DIGIPIN string (hyphens are allowed and ignored).
 ///
 /// # Returns
-/// A `Coordinates` struct containing the decoded latitude and longitude
+///
+/// A `Coordinates` struct with `latitude` and `longitude` representing the cell center.
 ///
 /// # Errors
-/// Returns `DigipinError` if the DIGIPIN is invalid.
 ///
-/// # Example
+/// Returns `DigipinError::InvalidLength(n)` when the number of non-hyphen symbols is not exactly 10,
+/// or `DigipinError::InvalidCharacter(ch)` for characters not present in the DIGIPIN grid.
+///
+/// # Examples
+///
 /// ```
-/// use digipin::get_coordinates_from_digipin;
+/// use digipin::{get_coordinates_from_digipin, Coordinates};
 ///
-/// let coords = get_coordinates_from_digipin("FCJ-3F9-8273")?;
-/// println!("Latitude: {}, Longitude: {}", coords.latitude, coords.longitude);
-/// # Ok::<(), digipin::DigipinError>(())
+/// let coords = get_coordinates_from_digipin("FCJ-3F9-8273").unwrap();
+/// assert!(coords.latitude.abs() <= 90.0);
+/// assert!(coords.longitude.abs() <= 180.0);
 /// ```
 pub fn get_coordinates_from_digipin(digipin: &str) -> DigipinResult<Coordinates> {
     let mut idx_lat: u32 = 0;
@@ -55,7 +63,20 @@ pub fn get_coordinates_from_digipin(digipin: &str) -> DigipinResult<Coordinates>
     })
 }
 
-/// Find the position of a character in the DIGIPIN grid
+/// Map a DIGIPIN character to its (row, column) coordinates in the DIGIPIN grid.
+///
+/// Returns `Ok((row, col))` when `ch` is an ASCII character with a defined entry in the internal lookup table;
+/// returns `Err(DigipinError::InvalidCharacter(ch))` for non-ASCII characters or characters not present in the lookup.
+///
+/// # Examples
+///
+/// ```
+/// // Succeeds for ASCII characters that exist in the DIGIPIN alphabet.
+/// assert!(crate::decode::find_char_in_grid('A').is_ok());
+///
+/// // Non-ASCII characters are rejected.
+/// assert!(crate::decode::find_char_in_grid('ß').is_err());
+/// ```
 fn find_char_in_grid(ch: char) -> DigipinResult<(usize, usize)> {
     if !ch.is_ascii() {
         return Err(crate::error::DigipinError::InvalidCharacter(ch));
