@@ -1,4 +1,4 @@
-use digipin::{get_digipin, get_coordinates_from_digipin};
+use digipin::{get_coordinates_from_digipin, get_digipin};
 use divan::black_box;
 
 #[divan::bench]
@@ -16,4 +16,4 @@ fn decode() {
 
 fn main() {
     divan::main();
-} 
+}

@@ -1,4 +1,8 @@
-use crate::{constants::{BOUNDS, LOOKUP, POWER, SPAN}, coordinates::Coordinates, error::DigipinResult};
+use crate::{
+    constants::{BOUNDS, INV_POWER_MUL_SPAN, LOOKUP},
+    coordinates::Coordinates,
+    error::DigipinResult,
+};
 
 /// Decodes a DIGIPIN string back into its central latitude and longitude coordinates.
 ///
@@ -20,43 +24,44 @@ use crate::{constants::{BOUNDS, LOOKUP, POWER, SPAN}, coordinates::Coordinates, 
 /// # Ok::<(), digipin::DigipinError>(())
 /// ```
 pub fn get_coordinates_from_digipin(digipin: &str) -> DigipinResult<Coordinates> {
-    let mut char_iter = digipin.chars().filter(|&c| c != '-');
     let mut idx_lat: u32 = 0;
     let mut idx_lon: u32 = 0;
     let mut count = 0;
 
-    for _ in 0..10 {
-        match char_iter.next() {
-            Some(ch) => {
-                let (row, col) = find_char_in_grid(ch)?;
-                idx_lat = (idx_lat << 2) | row as u32;
-                idx_lon = (idx_lon << 2) | col as u32;
-                count += 1;
-            }
-            None => return Err(crate::error::DigipinError::InvalidLength(count)),
+    for b in digipin.bytes() {
+        if b == b'-' {
+            continue;
         }
+        if count >= 10 {
+            return Err(crate::error::DigipinError::InvalidLength(count + 1));
+        }
+
+        let (row, col) = find_char_in_grid(b)?;
+        idx_lat = (idx_lat << 2) | row as u32;
+        idx_lon = (idx_lon << 2) | col as u32;
+        count += 1;
     }
 
-    if char_iter.next().is_some() {
-        return Err(crate::error::DigipinError::InvalidLength(count + 1));
+    if count != 10 {
+        return Err(crate::error::DigipinError::InvalidLength(count));
     }
 
-    let frac_lat = (idx_lat as f64 + 0.5) / (POWER as f64);
-    let center_lat = BOUNDS.max_lat - frac_lat * SPAN;
-    let frac_lon = (idx_lon as f64 + 0.5) / (POWER as f64);
-    let center_lon = BOUNDS.min_lon + frac_lon * SPAN;
+    let center_lat = BOUNDS.max_lat - (idx_lat as f64 + 0.5) * INV_POWER_MUL_SPAN;
+    let center_lon = BOUNDS.min_lon + (idx_lon as f64 + 0.5) * INV_POWER_MUL_SPAN;
 
-    Ok(Coordinates { latitude: center_lat, longitude: center_lon })
+    Ok(Coordinates {
+        latitude: center_lat,
+        longitude: center_lon,
+    })
 }
 
 /// Find the position of a character in the DIGIPIN grid
-fn find_char_in_grid(ch: char) -> DigipinResult<(usize, usize)> {
-    let idx = ch as u32;
-    if idx > 127 {
-        return Err(crate::error::DigipinError::InvalidCharacter(ch));
+fn find_char_in_grid(b: u8) -> DigipinResult<(usize, usize)> {
+    if b > 127 {
+        return Err(crate::error::DigipinError::InvalidCharacter(b as char));
     }
-    match LOOKUP[idx as usize] {
+    match LOOKUP[b as usize] {
         Some((row, col)) => Ok((row as usize, col as usize)),
-        None => Err(crate::error::DigipinError::InvalidCharacter(ch)),
+        None => Err(crate::error::DigipinError::InvalidCharacter(b as char)),
     }
-} 
+}

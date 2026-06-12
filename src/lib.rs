@@ -8,9 +8,9 @@ mod encode;
 mod error;
 
 pub use coordinates::Coordinates;
-pub use error::{DigipinError, DigipinResult};
-pub use encode::get_digipin;
 pub use decode::get_coordinates_from_digipin;
+pub use encode::get_digipin;
+pub use error::{DigipinError, DigipinResult};
 
 #[cfg(test)]
 mod tests {
@@ -70,7 +70,7 @@ mod tests {
 
     #[test]
     fn test_boundary_roundtrip() {
-        use super::constants::{BOUNDS, SPAN, POWER};
+        use super::constants::{BOUNDS, POWER, SPAN};
         let half_cell = (SPAN / (POWER as f64)) / 2.0;
         let corners = [
             (BOUNDS.min_lat, BOUNDS.min_lon),
