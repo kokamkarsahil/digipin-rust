@@ -35,4 +35,4 @@ impl fmt::Display for DigipinError {
 impl std::error::Error for DigipinError {}
 
 /// Result type for DIGIPIN operations
-pub type DigipinResult<T> = Result<T, DigipinError>; 
+pub type DigipinResult<T> = Result<T, DigipinError>;

@@ -1,62 +1,89 @@
-use crate::{constants::{BOUNDS, LOOKUP, POWER, SPAN}, coordinates::Coordinates, error::DigipinResult};
+use crate::{
+    constants::{BOUNDS, INV_POWER_MUL_SPAN, LOOKUP},
+    coordinates::Coordinates,
+    error::DigipinResult,
+};
 
-/// Decodes a DIGIPIN string back into its central latitude and longitude coordinates.
+/// Decode a DIGIPIN string into the geographic coordinates of its cell center.
+///
+/// The input may include hyphens for readability; exactly 10 DIGIPIN symbols (excluding hyphens)
+/// are required. Invalid characters or incorrect symbol counts produce an error.
 ///
 /// # Arguments
-/// * `digipin` - A DIGIPIN string (with or without hyphens)
+///
+/// * `digipin` - A DIGIPIN string (hyphens are allowed and ignored).
 ///
 /// # Returns
-/// A `Coordinates` struct containing the decoded latitude and longitude
+///
+/// A `Coordinates` struct with `latitude` and `longitude` representing the cell center.
 ///
 /// # Errors
-/// Returns `DigipinError` if the DIGIPIN is invalid.
 ///
-/// # Example
+/// Returns `DigipinError::InvalidLength(n)` when the number of non-hyphen symbols is not exactly 10,
+/// or `DigipinError::InvalidCharacter(ch)` for characters not present in the DIGIPIN grid.
+///
+/// # Examples
+///
 /// ```
-/// use digipin::get_coordinates_from_digipin;
+/// use digipin::{get_coordinates_from_digipin, Coordinates};
 ///
-/// let coords = get_coordinates_from_digipin("FCJ-3F9-8273")?;
-/// println!("Latitude: {}, Longitude: {}", coords.latitude, coords.longitude);
-/// # Ok::<(), digipin::DigipinError>(())
+/// let coords = get_coordinates_from_digipin("FCJ-3F9-8273").unwrap();
+/// assert!(coords.latitude.abs() <= 90.0);
+/// assert!(coords.longitude.abs() <= 180.0);
 /// ```
 pub fn get_coordinates_from_digipin(digipin: &str) -> DigipinResult<Coordinates> {
-    let mut char_iter = digipin.chars().filter(|&c| c != '-');
     let mut idx_lat: u32 = 0;
     let mut idx_lon: u32 = 0;
     let mut count = 0;
 
-    for _ in 0..10 {
-        match char_iter.next() {
-            Some(ch) => {
-                let (row, col) = find_char_in_grid(ch)?;
-                idx_lat = (idx_lat << 2) | row as u32;
-                idx_lon = (idx_lon << 2) | col as u32;
-                count += 1;
-            }
-            None => return Err(crate::error::DigipinError::InvalidLength(count)),
+    for ch in digipin.chars() {
+        if ch == '-' {
+            continue;
         }
+        if count >= 10 {
+            return Err(crate::error::DigipinError::InvalidLength(count + 1));
+        }
+
+        let (row, col) = find_char_in_grid(ch)?;
+        idx_lat = (idx_lat << 2) | row as u32;
+        idx_lon = (idx_lon << 2) | col as u32;
+        count += 1;
     }
 
-    if char_iter.next().is_some() {
-        return Err(crate::error::DigipinError::InvalidLength(count + 1));
+    if count != 10 {
+        return Err(crate::error::DigipinError::InvalidLength(count));
     }
 
-    let frac_lat = (idx_lat as f64 + 0.5) / (POWER as f64);
-    let center_lat = BOUNDS.max_lat - frac_lat * SPAN;
-    let frac_lon = (idx_lon as f64 + 0.5) / (POWER as f64);
-    let center_lon = BOUNDS.min_lon + frac_lon * SPAN;
+    let center_lat = BOUNDS.max_lat - (idx_lat as f64 + 0.5) * INV_POWER_MUL_SPAN;
+    let center_lon = BOUNDS.min_lon + (idx_lon as f64 + 0.5) * INV_POWER_MUL_SPAN;
 
-    Ok(Coordinates { latitude: center_lat, longitude: center_lon })
+    Ok(Coordinates {
+        latitude: center_lat,
+        longitude: center_lon,
+    })
 }
 
-/// Find the position of a character in the DIGIPIN grid
+/// Map a DIGIPIN character to its (row, column) coordinates in the DIGIPIN grid.
+///
+/// Returns `Ok((row, col))` when `ch` is an ASCII character with a defined entry in the internal lookup table;
+/// returns `Err(DigipinError::InvalidCharacter(ch))` for non-ASCII characters or characters not present in the lookup.
+///
+/// # Examples
+///
+/// ```
+/// // Succeeds for ASCII characters that exist in the DIGIPIN alphabet.
+/// assert!(crate::decode::find_char_in_grid('A').is_ok());
+///
+/// // Non-ASCII characters are rejected.
+/// assert!(crate::decode::find_char_in_grid('ß').is_err());
+/// ```
 fn find_char_in_grid(ch: char) -> DigipinResult<(usize, usize)> {
-    let idx = ch as u32;
-    if idx > 127 {
+    if !ch.is_ascii() {
         return Err(crate::error::DigipinError::InvalidCharacter(ch));
     }
-    match LOOKUP[idx as usize] {
+    let b = ch as u8;
+    match LOOKUP[b as usize] {
         Some((row, col)) => Ok((row as usize, col as usize)),
         None => Err(crate::error::DigipinError::InvalidCharacter(ch)),
     }
-} 
+}

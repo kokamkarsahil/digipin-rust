@@ -10,7 +10,15 @@ pub struct Coordinates {
 }
 
 impl Coordinates {
-    /// Creates a new Coordinates instance with the given latitude and longitude
+    /// Constructs a `Coordinates` value from the provided latitude and longitude.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let c = Coordinates::new(12.34, 56.78);
+    /// assert_eq!(c.latitude, 12.34);
+    /// assert_eq!(c.longitude, 56.78);
+    /// ```
     pub fn new(latitude: f64, longitude: f64) -> Self {
         Self {
             latitude,
