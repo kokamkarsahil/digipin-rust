@@ -28,15 +28,15 @@ pub fn get_coordinates_from_digipin(digipin: &str) -> DigipinResult<Coordinates>
     let mut idx_lon: u32 = 0;
     let mut count = 0;
 
-    for b in digipin.bytes() {
-        if b == b'-' {
+    for ch in digipin.chars() {
+        if ch == '-' {
             continue;
         }
         if count >= 10 {
             return Err(crate::error::DigipinError::InvalidLength(count + 1));
         }
 
-        let (row, col) = find_char_in_grid(b)?;
+        let (row, col) = find_char_in_grid(ch)?;
         idx_lat = (idx_lat << 2) | row as u32;
         idx_lon = (idx_lon << 2) | col as u32;
         count += 1;
@@ -56,12 +56,13 @@ pub fn get_coordinates_from_digipin(digipin: &str) -> DigipinResult<Coordinates>
 }
 
 /// Find the position of a character in the DIGIPIN grid
-fn find_char_in_grid(b: u8) -> DigipinResult<(usize, usize)> {
-    if b > 127 {
-        return Err(crate::error::DigipinError::InvalidCharacter(b as char));
+fn find_char_in_grid(ch: char) -> DigipinResult<(usize, usize)> {
+    if !ch.is_ascii() {
+        return Err(crate::error::DigipinError::InvalidCharacter(ch));
     }
+    let b = ch as u8;
     match LOOKUP[b as usize] {
         Some((row, col)) => Ok((row as usize, col as usize)),
-        None => Err(crate::error::DigipinError::InvalidCharacter(b as char)),
+        None => Err(crate::error::DigipinError::InvalidCharacter(ch)),
     }
 }
