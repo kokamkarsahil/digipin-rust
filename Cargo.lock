@@ -164,7 +164,7 @@ checksum = "baf0a07a401f374238ab8e2f11a104d2851bf9ce711ec69804834de8af45c7af"
 
 [[package]]
 name = "digipin"
-version = "0.0.4"
+version = "0.0.5"
 dependencies = [
  "codspeed-divan-compat",
  "serde",
