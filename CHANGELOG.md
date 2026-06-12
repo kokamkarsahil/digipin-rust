@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.5](https://github.com/kokamkarsahil/digipin-rust/compare/v0.0.4...v0.0.5) - 2026-06-12
+
+### Fixed
+
+- apply CodeRabbit auto-fixes
+- dependabot
+- README.md
+
+### Other
+
+- add walltime benchmark build target to codspeed workflow
+- upgrade CodSpeed action to v4 and configure execution mode
+- update project edition to 2024 in Cargo.toml
+- 📝 Add docstrings to `improve`
+- optimize DIGIPIN encoding and decoding performance using precomputed constants and byte-level operations
+- *(deps)* bump serde_json in the all-cargo-dependencies group
+- Add groups for all cargo dependencies in dependabot config
+
 ## [0.0.4](https://github.com/kokamkarsahil/digipin-rust/compare/v0.0.3...v0.0.4) - 2025-10-10
 
 ### Added
