@@ -1,5 +1,19 @@
 use digipin::{get_coordinates_from_digipin, get_digipin, Coordinates};
 
+/// Demonstrates encoding geographic coordinates to a DIGIPIN string and decoding them back while printing results and basic precision checks.
+///
+/// This example runs three demonstrations: encoding/decoding for New Delhi, encoding/decoding for Mumbai, and decoding a DIGIPIN after removing hyphens.
+///
+/// # Examples
+///
+/// ```no_run
+/// // Run the example program; it prints encoded DIGIPINs and decoded coordinates.
+/// fn main() { crate::main().unwrap(); }
+/// ```
+///
+/// # Returns
+///
+/// `Ok(())` on success, or an error if any encoding or decoding operation fails.
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Example coordinates for New Delhi
     let latitude = 28.6139;
