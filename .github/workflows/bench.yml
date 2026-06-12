@@ -22,10 +22,13 @@ jobs:
           bins: cargo-codspeed
 
       - name: Build the benchmark target(s)
-        run: cargo codspeed build
+        run: |
+          cargo codspeed build
+          cargo codspeed build -m walltime
 
       - name: Run the benchmarks
-        uses: CodSpeedHQ/action@v3
+        uses: CodSpeedHQ/action@v4
         with:
           run: cargo codspeed run
           token: ${{ secrets.CODSPEED_TOKEN }}
+          mode: "simulation,walltime"
