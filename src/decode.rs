@@ -1,89 +1,47 @@
 use crate::{
-    constants::{BOUNDS, INV_POWER_MUL_SPAN, LOOKUP},
-    coordinates::Coordinates,
-    error::DigipinResult,
+    CELL_WIDTH_DEGREES, COVERAGE, CellBounds, Coordinates, Digipin, DigipinResult,
+    constants::LOOKUP,
 };
 
-/// Decode a DIGIPIN string into the geographic coordinates of its cell center.
+/// Parses a DIGIPIN and returns its cell center at full `f64` precision.
 ///
-/// The input may include hyphens for readability; exactly 10 DIGIPIN symbols (excluding hyphens)
-/// are required. Invalid characters or incorrect symbol counts produce an error.
-///
-/// # Arguments
-///
-/// * `digipin` - A DIGIPIN string (hyphens are allowed and ignored).
-///
-/// # Returns
-///
-/// A `Coordinates` struct with `latitude` and `longitude` representing the cell center.
+/// ASCII lowercase is normalized to uppercase. Separators and whitespace are
+/// rejected; use [`Digipin::parse_display`] for a code grouped with spaces.
+/// For an already validated [`Digipin`], use [`Digipin::center`] directly.
 ///
 /// # Errors
 ///
-/// Returns `DigipinError::InvalidLength(n)` when the number of non-hyphen symbols is not exactly 10,
-/// or `DigipinError::InvalidCharacter(ch)` for characters not present in the DIGIPIN grid.
-///
-/// # Examples
+/// Returns the parsing errors documented on [`Digipin`].
 ///
 /// ```
-/// use digipin::{get_coordinates_from_digipin, Coordinates};
-///
-/// let coords = get_coordinates_from_digipin("FCJ-3F9-8273").unwrap();
-/// assert!(coords.latitude.abs() <= 90.0);
-/// assert!(coords.longitude.abs() <= 180.0);
+/// let coordinates = digipin::decode("4P3JK852C9")?;
+/// assert_eq!(coordinates.latitude, 12.971601486206055);
+/// assert_eq!(coordinates.longitude, 77.59458351135254);
+/// # Ok::<(), digipin::DigipinError>(())
 /// ```
-pub fn get_coordinates_from_digipin(digipin: &str) -> DigipinResult<Coordinates> {
-    let mut idx_lat: u32 = 0;
-    let mut idx_lon: u32 = 0;
-    let mut count = 0;
-
-    for ch in digipin.chars() {
-        if ch == '-' {
-            continue;
-        }
-        if count >= 10 {
-            return Err(crate::error::DigipinError::InvalidLength(count + 1));
-        }
-
-        let (row, col) = find_char_in_grid(ch)?;
-        idx_lat = (idx_lat << 2) | row as u32;
-        idx_lon = (idx_lon << 2) | col as u32;
-        count += 1;
-    }
-
-    if count != 10 {
-        return Err(crate::error::DigipinError::InvalidLength(count));
-    }
-
-    let center_lat = BOUNDS.max_lat - (idx_lat as f64 + 0.5) * INV_POWER_MUL_SPAN;
-    let center_lon = BOUNDS.min_lon + (idx_lon as f64 + 0.5) * INV_POWER_MUL_SPAN;
-
-    Ok(Coordinates {
-        latitude: center_lat,
-        longitude: center_lon,
-    })
+pub fn decode(input: &str) -> DigipinResult<Coordinates> {
+    input.parse::<Digipin>().map(|pin| pin.center())
 }
 
-/// Map a DIGIPIN character to its (row, column) coordinates in the DIGIPIN grid.
+/// Decodes validated symbols into exact cell edges in WGS84 degrees.
 ///
-/// Returns `Ok((row, col))` when `ch` is an ASCII character with a defined entry in the internal lookup table;
-/// returns `Err(DigipinError::InvalidCharacter(ch))` for non-ASCII characters or characters not present in the lookup.
-///
-/// # Examples
-///
-/// ```
-/// // Succeeds for ASCII characters that exist in the DIGIPIN alphabet.
-/// assert!(crate::decode::find_char_in_grid('A').is_ok());
-///
-/// // Non-ASCII characters are rejected.
-/// assert!(crate::decode::find_char_in_grid('ß').is_err());
-/// ```
-fn find_char_in_grid(ch: char) -> DigipinResult<(usize, usize)> {
-    if !ch.is_ascii() {
-        return Err(crate::error::DigipinError::InvalidCharacter(ch));
+/// Accumulates north-origin row and west-origin column indices, then scales
+/// them by the full-resolution cell width without rounding the coordinates.
+pub(crate) fn bounds(pin: Digipin) -> CellBounds {
+    let mut north_index = 0u32;
+    let mut west_index = 0u32;
+    for &symbol in pin.as_bytes() {
+        let position = LOOKUP[symbol as usize];
+        north_index = (north_index << 2) | u32::from(position >> 2);
+        west_index = (west_index << 2) | u32::from(position & 3);
     }
-    let b = ch as u8;
-    match LOOKUP[b as usize] {
-        Some((row, col)) => Ok((row as usize, col as usize)),
-        None => Err(crate::error::DigipinError::InvalidCharacter(ch)),
-    }
+
+    let north = COVERAGE.north - f64::from(north_index) * CELL_WIDTH_DEGREES;
+    let west = COVERAGE.west + f64::from(west_index) * CELL_WIDTH_DEGREES;
+    CellBounds::new(
+        north - CELL_WIDTH_DEGREES,
+        west,
+        north,
+        west + CELL_WIDTH_DEGREES,
+    )
 }

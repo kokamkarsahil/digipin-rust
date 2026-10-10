@@ -1,49 +1,21 @@
-/// DIGIPIN grid used for encoding/decoding
-pub(crate) const DIGIPIN_GRID: [[u8; 4]; 4] = [
-    [b'F', b'C', b'9', b'8'],
-    [b'J', b'3', b'2', b'7'],
-    [b'K', b'4', b'5', b'6'],
-    [b'L', b'M', b'P', b'T'],
-];
-pub(crate) const LOOKUP: [Option<(u8, u8)>; 128] = {
-    let mut arr = [None; 128];
-    arr[b'F' as usize] = Some((0, 0));
-    arr[b'C' as usize] = Some((0, 1));
-    arr[b'9' as usize] = Some((0, 2));
-    arr[b'8' as usize] = Some((0, 3));
-    arr[b'J' as usize] = Some((1, 0));
-    arr[b'3' as usize] = Some((1, 1));
-    arr[b'2' as usize] = Some((1, 2));
-    arr[b'7' as usize] = Some((1, 3));
-    arr[b'K' as usize] = Some((2, 0));
-    arr[b'4' as usize] = Some((2, 1));
-    arr[b'5' as usize] = Some((2, 2));
-    arr[b'6' as usize] = Some((2, 3));
-    arr[b'L' as usize] = Some((3, 0));
-    arr[b'M' as usize] = Some((3, 1));
-    arr[b'P' as usize] = Some((3, 2));
-    arr[b'T' as usize] = Some((3, 3));
+/// Rows are ordered north to south; columns west to east.
+pub(crate) const GRID: [[u8; 4]; 4] = [*b"FC98", *b"J327", *b"K456", *b"LMPT"];
 
-    arr
-};
-pub(crate) const SPAN: f64 = 36.0;
-pub(crate) const POWER: u32 = 1 << 20;
-pub(crate) const INV_SPAN_MUL_POWER: f64 = (POWER as f64) / SPAN;
-pub(crate) const INV_POWER_MUL_SPAN: f64 = SPAN / (POWER as f64);
+pub(crate) const CELLS_PER_AXIS: u32 = 1 << (2 * crate::DIGIPIN_LENGTH);
+pub(crate) const INVALID_SYMBOL: u8 = u8::MAX;
 
-/// Geographic bounds structure
-#[derive(Debug, Clone, Copy)]
-pub(crate) struct Bounds {
-    pub(crate) min_lat: f64,
-    pub(crate) max_lat: f64,
-    pub(crate) min_lon: f64,
-    pub(crate) max_lon: f64,
-}
-
-/// Geographic bounds for DIGIPIN encoding (covers India)
-pub(crate) const BOUNDS: Bounds = Bounds {
-    min_lat: 2.5,
-    max_lat: 38.5,
-    min_lon: 63.5,
-    max_lon: 99.5,
+/// The high two bits encode the row, and the low two bits encode the column.
+/// Generated from GRID so encoding and decoding cannot drift apart.
+pub(crate) const LOOKUP: [u8; 128] = {
+    let mut lookup = [INVALID_SYMBOL; 128];
+    let mut row = 0;
+    while row < 4 {
+        let mut col = 0;
+        while col < 4 {
+            lookup[GRID[row][col] as usize] = (row * 4 + col) as u8;
+            col += 1;
+        }
+        row += 1;
+    }
+    lookup
 };

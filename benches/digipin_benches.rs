@@ -1,29 +1,53 @@
-use digipin::{get_coordinates_from_digipin, get_digipin};
+use digipin::{Coordinates, Digipin};
 use divan::black_box;
 
+/// Measures encoding New Delhi coordinates into a validated DIGIPIN.
 #[divan::bench]
-fn encode() {
-    let lat = black_box(28.6139f64);
-    let lon = black_box(77.2090f64);
-    get_digipin(lat, lon).unwrap();
+fn encode() -> Digipin {
+    digipin::encode(black_box(28.6139), black_box(77.2090)).unwrap()
 }
 
+/// Measures validating and parsing a ten-character uppercase canonical code.
 #[divan::bench]
-fn decode() {
-    let pin = black_box("FCJ-3F9-8273");
-    get_coordinates_from_digipin(pin).unwrap();
+fn parse_canonical() -> Digipin {
+    black_box("39J438TJC7").parse().unwrap()
 }
 
-/// Entrypoint for the benchmark binary that runs the divan benchmark harness.
-///
-/// # Examples
-///
-/// ```no_run
-/// // Runs the divan benchmark harness for this binary.
-/// fn main() {
-///     divan::main();
-/// }
-/// ```
+/// Measures validating lowercase input and normalizing it to a canonical code.
+#[divan::bench]
+fn parse_lowercase() -> Digipin {
+    black_box("39j438tjc7").parse().unwrap()
+}
+
+/// Measures validating and parsing a code with the official 3–4–3 space grouping.
+#[divan::bench]
+fn parse_display() -> Digipin {
+    Digipin::parse_display(black_box("39J 438T JC7")).unwrap()
+}
+
+/// Measures computing the center of a validated DIGIPIN cell.
+/// Parsing occurs before the measured closure and is excluded from the timing.
+#[divan::bench]
+fn center(bencher: divan::Bencher) {
+    let pin: Digipin = "39J438TJC7".parse().unwrap();
+    bencher.bench(|| black_box(pin).center());
+}
+
+/// Measures computing the bounds of a validated DIGIPIN cell.
+/// Parsing occurs before the measured closure and is excluded from the timing.
+#[divan::bench]
+fn bounds(bencher: divan::Bencher) {
+    let pin: Digipin = "39J438TJC7".parse().unwrap();
+    bencher.bench(|| black_box(pin).bounds());
+}
+
+/// Measures strict string parsing followed by computing the decoded cell center.
+#[divan::bench]
+fn decode() -> Coordinates {
+    digipin::decode(black_box("39J438TJC7")).unwrap()
+}
+
+/// Runs the Divan benchmark harness for DIGIPIN encoding, parsing, and decoding.
 fn main() {
     divan::main();
 }

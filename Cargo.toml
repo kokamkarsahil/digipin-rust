@@ -2,19 +2,25 @@
 name = "digipin"
 version = "0.0.5"
 edition = "2024"
+rust-version = "1.85"
 authors = ["Sahil"]
-description = "DIGIPIN Encoder and Decoder Library - Encode latitude & longitude into 10-digit alphanumeric DIGIPIN codes"
+description = "Allocation-free, no_std DIGIPIN encoding and decoding with validated codes and geographic cell bounds"
 license = "MIT"
 repository = "https://github.com/kokamkarsahil/digipin-rust/"
 keywords = ["geocoding", "location", "india-post", "coordinates", "digipin"]
-categories = ["encoding", "algorithms"]
+categories = ["encoding", "algorithms", "no-std::no-alloc"]
+readme = "README.md"
+include = ["src/**", "tests/**", "examples/**", "benches/**", "Cargo.toml", "Cargo.lock", "README.md", "MIGRATION.md", "CHANGELOG.md", "LICENSE"]
 
 [dependencies]
-serde = { version = "1.0", features = ["derive"], optional = true }
+serde = { version = "1.0", default-features = false, features = ["derive"], optional = true }
 
 [features]
 default = []
 serde = ["dep:serde"]
+
+[package.metadata.docs.rs]
+all-features = true
 
 [dev-dependencies]
 divan = { version = "3.0.4", package = "codspeed-divan-compat" }
