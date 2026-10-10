@@ -33,7 +33,7 @@ impl Digipin {
     ///
     /// # Errors
     ///
-    /// See [`crate::encode`] for coordinate validation errors.
+    /// See [`crate::encode()`] for coordinate validation errors.
     pub fn encode(latitude: f64, longitude: f64) -> DigipinResult<Self> {
         crate::encode(latitude, longitude)
     }
@@ -110,6 +110,10 @@ impl Digipin {
 impl FromStr for Digipin {
     type Err = DigipinError;
 
+    /// Validates ten ASCII symbols and normalizes lowercase letters to uppercase.
+    ///
+    /// Checks byte length first, then reports the first invalid character with
+    /// its zero-based byte offset. Separators and whitespace are rejected.
     fn from_str(input: &str) -> DigipinResult<Self> {
         if input.len() != DIGIPIN_LENGTH {
             return Err(DigipinError::InvalidLength {
@@ -134,6 +138,7 @@ impl FromStr for Digipin {
 impl TryFrom<&str> for Digipin {
     type Error = DigipinError;
 
+    /// Parses a continuous DIGIPIN string using the same validation as [`FromStr`].
     fn try_from(input: &str) -> DigipinResult<Self> {
         input.parse()
     }
@@ -142,24 +147,28 @@ impl TryFrom<&str> for Digipin {
 impl TryFrom<Coordinates> for Digipin {
     type Error = DigipinError;
 
+    /// Encodes coordinates after checking finite values and DIGIPIN coverage limits.
     fn try_from(coordinates: Coordinates) -> DigipinResult<Self> {
         coordinates.encode()
     }
 }
 
 impl AsRef<str> for Digipin {
+    /// Borrows the continuous uppercase code without allocating.
     fn as_ref(&self) -> &str {
         self.as_str()
     }
 }
 
 impl Borrow<str> for Digipin {
+    /// Borrows the canonical string for collection lookups using `str` keys.
     fn borrow(&self) -> &str {
         self.as_str()
     }
 }
 
 impl Hash for Digipin {
+    /// Hashes the canonical string to preserve the [`Borrow<str>`] hash contract.
     fn hash<H: Hasher>(&self, state: &mut H) {
         // Borrow<str> requires the same hash as the borrowed string.
         self.as_str().hash(state);
@@ -167,12 +176,14 @@ impl Hash for Digipin {
 }
 
 impl fmt::Display for Digipin {
+    /// Writes the canonical code using the formatter's width, alignment, and precision.
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.pad(self.as_str())
     }
 }
 
 impl fmt::Debug for Digipin {
+    /// Formats the validated code as a `Digipin` debug tuple.
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_tuple("Digipin").field(&self.as_str()).finish()
     }
@@ -185,6 +196,7 @@ impl fmt::Debug for Digipin {
 pub struct GroupedDigipin<'a>(&'a Digipin);
 
 impl fmt::Display for GroupedDigipin<'_> {
+    /// Formats `XXX XXXX XXX` without allocating, honoring formatter padding and precision.
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let symbols = self.0.as_bytes();
         let mut bytes = [b' '; DIGIPIN_LENGTH + 2];

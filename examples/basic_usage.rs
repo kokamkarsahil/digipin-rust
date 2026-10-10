@@ -1,5 +1,8 @@
 use digipin::{Coordinates, Digipin, DigipinError, decode};
 
+/// Prints canonical and grouped codes, cell centers, and bounds for three locations.
+/// Checks containment and center round trips, then demonstrates lowercase and
+/// grouped parsing, propagating any encoding or parsing error to the caller.
 fn main() -> Result<(), DigipinError> {
     let locations = [
         ("New Delhi", Coordinates::new(28.6139, 77.2090)),

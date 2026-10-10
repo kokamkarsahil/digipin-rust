@@ -23,6 +23,10 @@ pub fn decode(input: &str) -> DigipinResult<Coordinates> {
     input.parse::<Digipin>().map(|pin| pin.center())
 }
 
+/// Decodes validated symbols into exact cell edges in WGS84 degrees.
+///
+/// Accumulates north-origin row and west-origin column indices, then scales
+/// them by the full-resolution cell width without rounding the coordinates.
 pub(crate) fn bounds(pin: Digipin) -> CellBounds {
     let mut north_index = 0u32;
     let mut west_index = 0u32;

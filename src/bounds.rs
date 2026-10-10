@@ -22,6 +22,7 @@ pub struct CellBounds {
 }
 
 impl CellBounds {
+    /// Stores south, west, north, and east bounds in degrees without validation.
     pub(crate) const fn new(south: f64, west: f64, north: f64, east: f64) -> Self {
         Self {
             south,

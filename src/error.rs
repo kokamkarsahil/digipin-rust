@@ -25,6 +25,7 @@ pub enum DigipinError {
 }
 
 impl fmt::Display for DigipinError {
+    /// Describes the rejected coordinate, input length, character, or display format.
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::LatitudeOutOfRange(value) => write!(

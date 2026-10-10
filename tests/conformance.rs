@@ -15,16 +15,19 @@ use std::collections::{BTreeSet, HashSet};
 const GRID: [[u8; 4]; 4] = [*b"FC98", *b"J327", *b"K456", *b"LMPT"];
 
 // These positive-coordinate helpers work on the MSRV without f64::next_up/down.
+/// Returns the immediately preceding representable float for a finite positive value.
 fn below(value: f64) -> f64 {
     assert!(value.is_finite() && value > 0.0);
     f64::from_bits(value.to_bits() - 1)
 }
 
+/// Returns the immediately following representable float for a finite positive value.
 fn above(value: f64) -> f64 {
     assert!(value.is_finite() && value > 0.0);
     f64::from_bits(value.to_bits() + 1)
 }
 
+/// Builds a coordinate pair without restricting values to DIGIPIN coverage.
 fn coordinates(latitude: f64, longitude: f64) -> Coordinates {
     Coordinates {
         latitude,
@@ -53,6 +56,7 @@ fn reference_encode(latitude: f64, longitude: f64) -> String {
     code
 }
 
+/// Decodes a valid canonical code by recursively subdividing the official grid.
 fn reference_bounds(code: &str) -> CellBounds {
     let (mut south, mut north) = (2.5, 38.5);
     let (mut west, mut east) = (63.5, 99.5);
@@ -84,6 +88,7 @@ fn reference_bounds(code: &str) -> CellBounds {
     }
 }
 
+/// Checks reference agreement, exact cell geometry, membership, and center precision.
 fn assert_conforms(latitude: f64, longitude: f64) {
     let expected_code = reference_encode(latitude, longitude);
     let pin = encode(latitude, longitude).unwrap();
@@ -110,6 +115,7 @@ fn assert_conforms(latitude: f64, longitude: f64) {
     assert!((center.longitude - longitude).abs() <= CELL_WIDTH_DEGREES / 2.0);
 }
 
+/// Verifies the published Chennai, Bangalore, and Dak Bhawan codes and exact centers.
 #[test]
 fn official_published_examples() {
     // README: Chennai and Bangalore. Specification section 6: Dak Bhawan.
@@ -144,6 +150,7 @@ fn official_published_examples() {
     }
 }
 
+/// Checks the final standard's coverage rectangle, code length, and cell width.
 #[test]
 fn coverage_and_precision_match_the_final_standard() {
     assert_eq!(DIGIPIN_LENGTH, 10);
@@ -154,6 +161,7 @@ fn coverage_and_precision_match_the_final_standard() {
     assert_eq!(CELL_WIDTH_DEGREES, 36.0 / 1_048_576.0);
 }
 
+/// Confirms all coverage corners and sampled outer edges belong to their expected cells.
 #[test]
 fn coverage_corners_and_outer_edges_are_included() {
     for (latitude, longitude, code) in [
@@ -172,6 +180,7 @@ fn coverage_corners_and_outer_edges_are_included() {
     }
 }
 
+/// Verifies exact grid intersections select the northeast cell, including at finest depth.
 #[test]
 fn intersections_belong_to_the_northeast_cell() {
     for (latitude, longitude, code) in [
@@ -189,6 +198,7 @@ fn intersections_belong_to_the_northeast_cell() {
     }
 }
 
+/// Checks all sixteen first-level symbols against the official north-to-south grid order.
 #[test]
 fn first_level_grid_has_the_official_orientation() {
     for (row, cells) in GRID.iter().enumerate() {
@@ -202,6 +212,7 @@ fn first_level_grid_has_the_official_orientation() {
     }
 }
 
+/// Exercises boundary ties and adjacent floats at every subdivision depth.
 #[test]
 fn every_partition_depth_uses_north_and_east_boundary_ties() {
     for depth in 1..=10 {
@@ -243,8 +254,10 @@ fn every_partition_depth_uses_north_and_east_boundary_ties() {
     }
 }
 
+/// Compares twenty thousand reproducible points across coverage with the reference algorithm.
 #[test]
 fn seeded_full_domain_samples_match_the_independent_reference() {
+    /// Advances SplitMix64 and maps its upper 53 bits into the interval [0, 1).
     fn uniform(state: &mut u64) -> f64 {
         // SplitMix64, with 53 random bits mapped into [0, 1).
         *state = state.wrapping_add(0x9e37_79b9_7f4a_7c15);
@@ -262,6 +275,7 @@ fn seeded_full_domain_samples_match_the_independent_reference() {
     }
 }
 
+/// Checks half-open cell membership, outer-edge exceptions, and nonfinite rejection.
 #[test]
 fn cell_membership_uses_closed_south_west_and_open_north_east_edges() {
     let pin = encode(20.5, 81.5).unwrap();
@@ -287,6 +301,7 @@ fn cell_membership_uses_closed_south_west_and_open_north_east_edges() {
     }
 }
 
+/// Verifies invalid coordinates preserve their offending value in the corresponding error.
 #[test]
 fn coordinates_outside_coverage_and_nonfinite_values_are_rejected() {
     for latitude in [
@@ -325,6 +340,7 @@ fn coordinates_outside_coverage_and_nonfinite_values_are_rejected() {
     }
 }
 
+/// Confirms ASCII case normalization and canonical output for the complete approved alphabet.
 #[test]
 fn raw_parsing_normalizes_ascii_case_and_emits_canonical_identifiers() {
     let expected = encode(28.622788, 77.213033).unwrap();
@@ -342,6 +358,7 @@ fn raw_parsing_normalizes_ascii_case_and_emits_canonical_identifiers() {
     }
 }
 
+/// Checks raw parsing reports byte lengths and invalid symbols without accepting separators.
 #[test]
 fn raw_parsing_rejects_separators_whitespace_and_wrong_lengths() {
     for text in [
@@ -378,6 +395,7 @@ fn raw_parsing_rejects_separators_whitespace_and_wrong_lengths() {
     }
 }
 
+/// Ensures Unicode input is rejected safely with scalar values and byte offsets intact.
 #[test]
 fn unicode_is_rejected_without_panicking_or_ascii_lookalike_normalization() {
     for (text, index, character) in [
@@ -399,6 +417,7 @@ fn unicode_is_rejected_without_panicking_or_ascii_lookalike_normalization() {
     }
 }
 
+/// Verifies optional display parsing accepts only continuous codes or exact 3-4-3 spacing.
 #[test]
 fn display_grouping_uses_the_may_2026_three_four_three_format() {
     let pin: Digipin = "39J49LL8T4".parse().unwrap();
@@ -424,8 +443,10 @@ fn display_grouping_uses_the_may_2026_three_four_three_format() {
     assert!(Digipin::parse_display("39J 49LL 8TZ").is_err());
 }
 
+/// Checks code value traits, canonical deduplication, and borrowed string collection lookups.
 #[test]
 fn validated_codes_support_value_semantics_and_ordered_collections() {
+    /// Enforces the copyable, comparable, sortable, hashable, and debuggable value contract.
     fn value_traits<T: Copy + Eq + Ord + std::hash::Hash + std::fmt::Debug>() {}
     value_traits::<Digipin>();
 
@@ -444,6 +465,7 @@ fn validated_codes_support_value_semantics_and_ordered_collections() {
     assert_eq!(sorted, vec![uppercase, other]);
 }
 
+/// Confirms public conversions preserve code validation, canonical borrowing, and compact storage.
 #[test]
 fn public_conversions_preserve_the_validated_value() {
     let position = Coordinates::new(28.622788, 77.213033);
@@ -464,6 +486,7 @@ fn public_conversions_preserve_the_validated_value() {
     assert!(Digipin::try_from(Coordinates::new(-33.8688, 151.2093)).is_err());
 }
 
+/// Checks Serde emits canonical strings and rejects malformed codes or nonstring JSON values.
 #[cfg(feature = "serde")]
 #[test]
 fn serde_uses_validated_canonical_strings() {
@@ -492,6 +515,7 @@ fn serde_uses_validated_canonical_strings() {
     }
 }
 
+/// Verifies coordinate serialization supports locations beyond the DIGIPIN coverage rectangle.
 #[cfg(feature = "serde")]
 #[test]
 fn coordinate_serialization_keeps_general_geographic_coordinates() {
