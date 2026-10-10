@@ -1,266 +1,187 @@
-# digipin-rust
+# digipin
 
-DIGIPIN Encoder and Decoder Library - Encode latitude & longitude into 10-digit alphanumeric DIGIPIN codes
+A typed, allocation-free Rust implementation of India Post's DIGIPIN location code.
+Encode coordinates, parse validated codes, and recover a cell's center and bounds.
+The library supports `no_std` with no default runtime dependencies.
 
-For more information about DIGIPIN, read [Technical document DIGIPIN ](https://www.indiapost.gov.in/VAS/DOP_PDFFiles/DIGIPIN%20Technical%20document.pdf).
-and visit [India Post DIGIPIN](https://www.indiapost.gov.in/VAS/Pages/digipin.aspx)
+**Development status:** this checkout contains unreleased breaking changes. The
+package version remains `0.0.5`; the examples below describe the new API. See
+[MIGRATION.md](MIGRATION.md) when upgrading from the published API.
 
-## 🚀 Quick Start
+## Installation
 
-```rust
-use digipin::{get_digipin, get_coordinates_from_digipin};
-
-fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // Encode New Delhi coordinates to DIGIPIN
-    let digipin = get_digipin(28.6139, 77.2090)?;
-    println!("📍 DIGIPIN: {}", digipin); // Example: FCJ-3F9-8273
-    
-    // Decode back to coordinates
-    let coords = get_coordinates_from_digipin(&digipin)?;
-    println!("📍 Location: {:.4}°N, {:.4}°E", coords.latitude, coords.longitude);
-    
-    Ok(())
-}
-```
-
-Documentation: https://docs.rs/digipin/latest/digipin/
-
-## 📦 Installation
-
-Add this to your `Cargo.toml`:
+The current package version is:
 
 ```toml
 [dependencies]
-digipin = "0.1.0"
-
-# For Serde support
-digipin = { version = "0.1.0", features = ["serde"] }
-[dependencies]
-digipin = "0.1.0"
-
-# With Serde support for JSON serialization
-digipin = { version = "0.1.0", features = ["serde"] }
+digipin = "0.0.5"
 ```
+
+The published `0.0.5` release uses the older API. To use the unreleased API in this
+checkout, use a local path dependency instead:
+
+```toml
+[dependencies]
+digipin = { path = "../digipin-rust" }
+```
+
+Rust **1.85 or newer** is required. The crate uses edition 2024.
 
 ## Usage
 
-### Digipin Converstion
-
 ```rust
-use digipin::{get_digipin};
+use digipin::{decode, encode, Coordinates, Digipin};
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // Major Indian cities
-    let cities = vec![
-        ("New Delhi", 28.6139, 77.2090),
-        ("Mumbai", 19.0760, 72.8777),
-        ("Bangalore", 12.9716, 77.5946),
-        ("Chennai", 13.0827, 80.2707),
-        ("Kolkata", 22.5726, 88.3639),
-        ("Hyderabad", 17.3850, 78.4867),
-    ];
-    
-    for (city, lat, lon) in cities {
-        let digipin = get_digipin(lat, lon)?;
-        println!("{:10} → {}", city, digipin);
-    }
-    
+fn main() -> Result<(), digipin::DigipinError> {
+    let location = Coordinates::new(28.6139, 77.2090);
+    let pin = encode(location.latitude, location.longitude)?;
+
+    assert_eq!(pin.as_str(), "39J438TJC7");
+    assert_eq!(location.encode()?, pin);
+    assert!(pin.bounds().contains(location));
+    println!("{}", pin.display_grouped()); // 39J 438T JC7
+
+    let parsed: Digipin = "39j438tjc7".parse()?;
+    assert_eq!(parsed, pin);
+    assert_eq!(decode(pin.as_str())?, pin.center());
+    assert_eq!(pin.center().encode()?, pin);
     Ok(())
 }
 ```
 
-**Output:**
-```
-New Delhi  → 39J-438-TJC7
-Mumbai     → 4FK-595-8823
-Bangalore  → 4P3-JK8-52C9
-Chennai    → 4T3-84L-L5L9
-Kolkata    → 2TF-J7F-86MM
-Hyderabad  → 422-594-J546
-```
+`Digipin` stores ten validated ASCII characters and implements `Copy`, `Eq`,
+`Hash`, and `Ord`. Pass codes as typed values after parsing once. `as_str()` and
+`Display` expose the uppercase canonical code; obtaining a `String` with
+`to_string()` is optional and allocates in the caller.
 
-### Bidirectional Conversion
+### Parsing and display
+
+Canonical codes contain exactly ten characters from `23456789CFJKLMPT`.
+`FromStr` and `decode` accept lowercase ASCII letters and normalize them to
+uppercase. They reject separators, whitespace, non-ASCII characters, and invalid
+lengths.
 
 ```rust
-use digipin::{get_digipin, get_coordinates_from_digipin, Coordinates};
+use digipin::Digipin;
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // Start with coordinates
-    let original = Coordinates::new(28.6139, 77.2090);
-    println!("Original: {:.4}°N, {:.4}°E", original.latitude, original.longitude);
-    
-    // Encode to DIGIPIN
-    let digipin = get_digipin(original.latitude, original.longitude)?;
-    println!("DIGIPIN:  {}", digipin);
-    
-    // Decode back to coordinates
-    let decoded = get_coordinates_from_digipin(&digipin)?;
-    println!("Decoded:  {:.4}°N, {:.4}°E", decoded.latitude, decoded.longitude);
-    
-    // Calculate precision
-    let accuracy = ((original.latitude - decoded.latitude).powi(2) + 
-                   (original.longitude - decoded.longitude).powi(2)).sqrt();
-    println!("Accuracy: ~{:.0}m", accuracy * 111_000.0); // Convert degrees to meters
-    
+fn main() -> Result<(), digipin::DigipinError> {
+    let pin: Digipin = "39j438tjc7".parse()?;
+    assert_eq!(pin.as_str(), "39J438TJC7");
+    assert!("39J-438-TJC7".parse::<Digipin>().is_err());
+
+    // Accept human-readable input explicitly: raw ten characters, or 3–4–3 groups
+    // separated by exactly one ASCII space each.
+    assert_eq!(Digipin::parse_display("39J 438T JC7")?, pin);
+    assert_eq!(Digipin::parse_display("39J438TJC7")?, pin);
+    assert!(Digipin::parse_display("39J  438T JC7").is_err());
+    println!("{}", pin.display_grouped()); // 39J 438T JC7
     Ok(())
 }
 ```
 
-**Output:**
-```
-Original: 28.6139°N, 77.2090°E
-DIGIPIN:  39J-438-TJC7
-Decoded:  28.6139°N, 77.2090°E
-Accuracy: ~0m
-```
+`display_grouped()` formats without allocating. The official display grouping is
+`XXX XXXX XXX`; hyphenated legacy codes require an explicit migration.
 
-### Error Handling
+### Geographic behavior
 
-```rust
-use digipin::{get_digipin, get_coordinates_from_digipin, DigipinError};
+Encoding accepts finite WGS 84 latitude and longitude in decimal degrees within
+the inclusive coverage rectangle:
 
-fn handle_location(lat: f64, lon: f64, digipin: &str) {
-    // Handle encoding errors
-    match get_digipin(lat, lon) {
-        Ok(pin) => println!("Encoded: {}", pin),
-        Err(DigipinError::LatitudeOutOfRange(lat)) => {
-            println!("Latitude {:.2}° is outside India", lat);
-        }
-        Err(DigipinError::LongitudeOutOfRange(lon)) => {
-            println!("Longitude {:.2}° is outside India", lon);
-        }
-        Err(e) => println!("Error: {}", e),
-    }
-    
-    // Handle decoding errors
-    match get_coordinates_from_digipin(digipin) {
-        Ok(coords) => println!("Decoded: {:.4}°N, {:.4}°E", 
-                               coords.latitude, coords.longitude),
-        Err(DigipinError::InvalidLength(len)) => {
-            println!("Invalid length: {} (expected 10 characters)", len);
-        }
-        Err(DigipinError::InvalidCharacter(ch)) => {
-            println!("Invalid character: '{}'", ch);
-        }
-        Err(e) => println!("Error: {}", e),
-    }
-}
+| Axis | Minimum | Maximum |
+| --- | ---: | ---: |
+| Latitude | 2.5° N | 38.5° N |
+| Longitude | 63.5° E | 99.5° E |
 
-fn main() {
-    // Test with invalid coordinates (outside India)
-    handle_location(51.5074, -0.1278, ""); // London - outside range
-    
-    // Test with invalid DIGIPIN
-    handle_location(0.0, 0.0, "INVALID-123"); // Invalid characters
-    handle_location(0.0, 0.0, "FCJ-3F9"); // Too short
-}
-```
+This rectangle covers India and surrounding areas; successful encoding does not
+establish that a location is inside India's political boundary.
+`Coordinates::new` simply stores its values; `encode` performs validation.
 
-### Format Flexibility
-
-```rust
-use digipin::get_coordinates_from_digipin;
-
-fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let digipin_with_hyphens = "FCJ-3F9-8273";
-    let digipin_without_hyphens = "FCJ3F98273";
-    
-    // Both formats work identically
-    let coords1 = get_coordinates_from_digipin(digipin_with_hyphens)?;
-    let coords2 = get_coordinates_from_digipin(digipin_without_hyphens)?;
-    
-    assert_eq!(coords1.latitude, coords2.latitude);
-    assert_eq!(coords1.longitude, coords2.longitude);
-    
-    println!("✅ Both formats produce identical results!");
-    Ok(())
-}
-```
-
-## Advanced Usage
-
-### With Serde (JSON Support)
-
-Enable the `serde` feature in your `Cargo.toml`:
-
-```toml
-[dependencies]
-digipin = { version = "0.1.0", features = ["serde"] }
-serde_json = "1.0"
-```
+Each code identifies a cell of width and height
+`0.000034332275390625°` (`36° / 4^10`), about 3.8 meters north to south.
+East-to-west distance varies with latitude. Decoding returns the **cell center**,
+so the original coordinate is quantized rather than recovered exactly.
 
 ```rust
 use digipin::Coordinates;
-use serde_json;
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let coords = Coordinates::new(28.6139, 77.2090);
-    
-    // Serialize to JSON
-    let json = serde_json::to_string(&coords)?;
-    println!("📤 JSON: {}", json);
-    // Output: {"latitude":28.6139,"longitude":77.2090}
-    
-    // Deserialize from JSON
-    let deserialized: Coordinates = serde_json::from_str(&json)?;
-    println!("📥 Restored: {:.4}°N, {:.4}°E", 
-             deserialized.latitude, deserialized.longitude);
-    
+fn main() -> Result<(), digipin::DigipinError> {
+    let original = Coordinates::new(28.622788, 77.213033);
+    let pin = original.encode()?;
+    assert_eq!(pin.as_str(), "39J49LL8T4"); // Dak Bhawan, New Delhi
+    let cell = pin.bounds();
+    assert!(cell.contains(original));
+    assert!(cell.contains(pin.center()));
+    assert!(cell.south < cell.north);
+    assert!(cell.west < cell.east);
     Ok(())
 }
 ```
 
-### Batch Processing
+`CellBounds` exposes `south`, `west`, `north`, and `east`. On a shared grid edge,
+the cell to the **north or east** owns the coordinate. Accordingly, `contains`
+includes the south and west edges and excludes the north and east edges, except
+that the maximum outer coverage edges remain included.
+
+### Optional Serde support
+
+Enable `serde` on your dependency:
+
+```toml
+[dependencies]
+digipin = { path = "../digipin-rust", features = ["serde"] }
+serde_json = "1.0"
+```
+
+`Digipin` serializes as a canonical string. Deserialization uses strict parsing,
+validates the input, and normalizes lowercase ASCII. `Coordinates` serializes as
+an object with `latitude` and `longitude` fields; coordinate coverage validation
+still happens when encoding.
 
 ```rust
-use digipin::{get_digipin, Coordinates};
-use std::collections::HashMap;
-
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let locations: HashMap<&str, Coordinates> = [
-        ("Gateway of India", Coordinates::new(18.9220, 72.8347)),
-        ("India Gate", Coordinates::new(28.6129, 77.2295)),
-        ("Charminar", Coordinates::new(17.3616, 78.4747)),
-        ("Howrah Bridge", Coordinates::new(22.5851, 88.3467)),
-    ].iter().cloned().collect();
-    
-    println!("Indian Landmarks and their DIGIPINs:");
-    println!("{:-<50}", "");
-    
-    for (name, coords) in locations {
-        match get_digipin(coords.latitude, coords.longitude) {
-            Ok(digipin) => println!("{:18} → {}", name, digipin),
-            Err(e) => println!("{:18} → Error: {}", name, e),
-        }
-    }
-    
+# #[cfg(feature = "serde")]
+# {
+    use digipin::{Coordinates, Digipin};
+
+    let pin: Digipin = "39j438tjc7".parse()?;
+    assert_eq!(serde_json::to_string(&pin)?, "\"39J438TJC7\"");
+    let restored: Digipin = serde_json::from_str("\"39j438tjc7\"")?;
+    assert_eq!(restored, pin);
+    assert!(serde_json::from_str::<Digipin>("\"39J 438T JC7\"").is_err());
+
+    let location = Coordinates::new(28.6139, 77.2090);
+    assert_eq!(
+        serde_json::to_string(&location)?,
+        r#"{"latitude":28.6139,"longitude":77.209}"#,
+    );
+# }
     Ok(())
 }
 ```
 
-### Running Examples and Tests
+Both the default crate and the `serde` feature support `no_std` without requiring
+an allocator. `serde_json` is only an example format and is not a library
+dependency.
 
-```bash
-# Clone the repository
-git clone https://github.com/your-username/digipin-rust.git
-cd digipin-rust
+## Specification and development
 
-# Run the basic example
+The implementation follows the [India Post DIGIPIN technical document, May
+2026](https://github.com/INDIAPOST-gov/digipin/blob/a15339e8fdea93b13ae0d7336e567c9ae6ceac8e/docs/DIGIPIN_Technical_Document.md).
+The source is pinned so that the documented boundary and display rules remain
+reviewable. [Published API documentation](https://docs.rs/digipin/0.0.5/digipin/)
+describes release `0.0.5`; generate documentation locally for this checkout.
+
+```sh
 cargo run --example basic_usage
-
-# Run all tests
-cargo test
-
-# Run tests with all features
-cargo test --all-features
-
-# Run tests with verbose output
-cargo test -- --nocapture
-
-# Check documentation
-cargo doc --open
+cargo test --locked
+cargo test --locked --all-features
+cargo fmt --all -- --check
+cargo clippy --locked --all-targets --all-features -- -D warnings
+RUSTDOCFLAGS="-D warnings" cargo doc --locked --no-deps --all-features
+cargo bench --locked --bench digipin_benches
 ```
 
-# License
+CI also checks Rust 1.85 and builds the library for the bare-metal
+`thumbv7em-none-eabi` target, with and without Serde.
 
-This project is licensed under the MIT License. See the `LICENSE` file for more details.
+Licensed under [MIT](LICENSE).

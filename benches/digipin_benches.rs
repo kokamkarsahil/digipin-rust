@@ -1,29 +1,43 @@
-use digipin::{get_coordinates_from_digipin, get_digipin};
+use digipin::{Coordinates, Digipin};
 use divan::black_box;
 
 #[divan::bench]
-fn encode() {
-    let lat = black_box(28.6139f64);
-    let lon = black_box(77.2090f64);
-    get_digipin(lat, lon).unwrap();
+fn encode() -> Digipin {
+    digipin::encode(black_box(28.6139), black_box(77.2090)).unwrap()
 }
 
 #[divan::bench]
-fn decode() {
-    let pin = black_box("FCJ-3F9-8273");
-    get_coordinates_from_digipin(pin).unwrap();
+fn parse_canonical() -> Digipin {
+    black_box("39J438TJC7").parse().unwrap()
 }
 
-/// Entrypoint for the benchmark binary that runs the divan benchmark harness.
-///
-/// # Examples
-///
-/// ```no_run
-/// // Runs the divan benchmark harness for this binary.
-/// fn main() {
-///     divan::main();
-/// }
-/// ```
+#[divan::bench]
+fn parse_lowercase() -> Digipin {
+    black_box("39j438tjc7").parse().unwrap()
+}
+
+#[divan::bench]
+fn parse_display() -> Digipin {
+    Digipin::parse_display(black_box("39J 438T JC7")).unwrap()
+}
+
+#[divan::bench]
+fn center(bencher: divan::Bencher) {
+    let pin: Digipin = "39J438TJC7".parse().unwrap();
+    bencher.bench(|| black_box(pin).center());
+}
+
+#[divan::bench]
+fn bounds(bencher: divan::Bencher) {
+    let pin: Digipin = "39J438TJC7".parse().unwrap();
+    bencher.bench(|| black_box(pin).bounds());
+}
+
+#[divan::bench]
+fn decode() -> Coordinates {
+    digipin::decode(black_box("39J438TJC7")).unwrap()
+}
+
 fn main() {
     divan::main();
 }
