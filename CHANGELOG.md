@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.6](https://github.com/kokamkarsahil/digipin-rust/compare/v0.0.5...v0.0.6) - 2026-10-10
+
+### Other
+
+- document all functions to meet coverage threshold
+- Restructured
+
 ### Added
 
 - Validated, allocation-free `Digipin` value type with canonical string access,
